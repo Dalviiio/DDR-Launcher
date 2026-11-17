@@ -22,3 +22,5 @@ TestResults/
 *.ucas
 *.uasset
 *.uexp
+CLAUDE.md
+CLAUDE.local.md
