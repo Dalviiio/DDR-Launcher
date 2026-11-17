@@ -1,0 +1,328 @@
+<!--
+    Dalviiio DDR Launcher theme. Base #101548, secondary #6728D0 (main actions), tertiary #2C77DA (switches, selection).
+    Elevation: Sunken (#0B0F38) for the side rail, Background for the page, Card for raised items.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:app="clr-namespace:DdrLauncher.App">
+
+    <!-- Palette -->
+    <Color x:Key="Color.Background">#101548</Color>
+    <Color x:Key="Color.Secondary">#6728D0</Color>
+    <Color x:Key="Color.Tertiary">#2C77DA</Color>
+
+    <SolidColorBrush x:Key="Brush.Background" Color="{StaticResource Color.Background}" />
+    <SolidColorBrush x:Key="Brush.Sunken" Color="#0B0F38" />
+    <SolidColorBrush x:Key="Brush.Card" Color="#181E5C" />
+    <SolidColorBrush x:Key="Brush.CardHover" Color="#20276B" />
+    <SolidColorBrush x:Key="Brush.CardPressed" Color="#151A52" />
+    <SolidColorBrush x:Key="Brush.Border" Color="#252C74" />
+    <SolidColorBrush x:Key="Brush.BorderStrong" Color="#353D8C" />
+    <SolidColorBrush x:Key="Brush.Text" Color="#F3F4FB" />
+    <SolidColorBrush x:Key="Brush.TextMuted" Color="#AEB3DE" />
+    <SolidColorBrush x:Key="Brush.TextSubtle" Color="#8188C4" />
+    <SolidColorBrush x:Key="Brush.Secondary" Color="{StaticResource Color.Secondary}" />
+    <SolidColorBrush x:Key="Brush.SecondaryHover" Color="#7838E0" />
+    <SolidColorBrush x:Key="Brush.SecondaryPressed" Color="#5821B8" />
+    <SolidColorBrush x:Key="Brush.SecondarySoft" Color="#2A1D6E" />
+    <SolidColorBrush x:Key="Brush.Tertiary" Color="{StaticResource Color.Tertiary}" />
+    <SolidColorBrush x:Key="Brush.TertiaryHover" Color="#3F87E4" />
+    <SolidColorBrush x:Key="Brush.TertiarySoft" Color="#17306F" />
+    <SolidColorBrush x:Key="Brush.Danger" Color="#F0727A" />
+    <SolidColorBrush x:Key="Brush.DangerHover" Color="#F48A90" />
+    <SolidColorBrush x:Key="Brush.DangerSoft" Color="#3A1D4A" />
+    <SolidColorBrush x:Key="Brush.OnDanger" Color="#2A0B12" />
+    <SolidColorBrush x:Key="Brush.Warning" Color="#F2BF45" />
+    <SolidColorBrush x:Key="Brush.WarningSoft" Color="#2F2C4A" />
+
+    <FontFamily x:Key="Font.Main">pack://application:,,,/Fonts/#Nunito Sans</FontFamily>
+
+    <CornerRadius x:Key="Radius.Control">10</CornerRadius>
+    <CornerRadius x:Key="Radius.Card">14</CornerRadius>
+
+    <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    <app:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibility" />
+    <app:NotConverter x:Key="Not" />
+
+    <!-- Keyboard focus: a rounded ring in the tertiary color, outside the control -->
+    <Style x:Key="FocusRing">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border Margin="-3" CornerRadius="12" BorderThickness="2" BorderBrush="{StaticResource Brush.Tertiary}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Icon drawn at 18px from a 24x24 Fluent geometry -->
+    <Style x:Key="Icon" TargetType="Path">
+        <Setter Property="Width" Value="18" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="Fill" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Control}}" />
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="Background" Value="{StaticResource Brush.Card}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Main}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource Brush.BorderStrong}" BorderThickness="1"
+                            CornerRadius="8" Padding="10,6" MaxWidth="360">
+                        <ContentPresenter>
+                            <ContentPresenter.Resources>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap" />
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Buttons. Content is a label; the Tag holds an optional icon geometry. -->
+    <Style x:Key="Button.Base" TargetType="Button">
+        <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+        <Setter Property="Background" Value="{StaticResource Brush.Card}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Main}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                            CornerRadius="{StaticResource Radius.Control}" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <Path x:Name="Glyph" Data="{TemplateBinding Tag}" Style="{StaticResource Icon}" Fill="{TemplateBinding Foreground}" Margin="0,0,8,0" />
+                            <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Tag" Value="{x:Null}">
+                            <Setter TargetName="Glyph" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                        <Trigger Property="Content" Value="{x:Null}">
+                            <Setter TargetName="Glyph" Property="Margin" Value="0" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.CardHover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.CardPressed}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Button.Primary" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+        <Setter Property="Background" Value="{StaticResource Brush.Secondary}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Secondary}" />
+        <Setter Property="Foreground" Value="White" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.SecondaryHover}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.SecondaryPressed}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Button.Danger" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+        <Setter Property="Background" Value="{StaticResource Brush.Danger}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Danger}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.OnDanger}" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.DangerHover}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Square icon button; always give it a ToolTip and AutomationProperties.Name -->
+    <Style x:Key="Button.Icon" TargetType="Button" BasedOn="{StaticResource Button.Base}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="Width" Value="40" />
+        <Setter Property="Height" Value="40" />
+        <Setter Property="Padding" Value="0" />
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.CardHover}" />
+                <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="Button.IconDanger" TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{StaticResource Brush.DangerSoft}" />
+                <Setter Property="Foreground" Value="{StaticResource Brush.Danger}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- Window caption buttons -->
+    <Style x:Key="Button.Caption" TargetType="Button" BasedOn="{StaticResource Button.Icon}">
+        <Setter Property="Width" Value="44" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True" />
+    </Style>
+
+    <Style x:Key="Button.CaptionClose" TargetType="Button" BasedOn="{StaticResource Button.Caption}">
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#E0444F" />
+                <Setter Property="Foreground" Value="White" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- On/off switch (a CheckBox). The track turns tertiary blue when on. -->
+    <Style x:Key="Switch" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Main}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Background="Transparent" MinHeight="40">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="Track" Width="46" Height="26" CornerRadius="13" Background="{StaticResource Brush.Sunken}"
+                                BorderBrush="{StaticResource Brush.BorderStrong}" BorderThickness="1" VerticalAlignment="Center">
+                            <Ellipse x:Name="Thumb" Width="18" Height="18" Fill="{StaticResource Brush.TextMuted}" HorizontalAlignment="Left" Margin="4,0">
+                                <Ellipse.RenderTransform>
+                                    <TranslateTransform x:Name="ThumbShift" X="0" />
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Border>
+                        <ContentPresenter Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center" MinWidth="24" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Track" Property="Background" Value="{StaticResource Brush.Tertiary}" />
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.Tertiary}" />
+                            <Setter TargetName="Thumb" Property="Fill" Value="White" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ThumbShift" Storyboard.TargetProperty="X" To="20" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ThumbShift" Storyboard.TargetProperty="X" To="0" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Track" Property="BorderBrush" Value="{StaticResource Brush.TertiaryHover}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Side navigation entry (a RadioButton). Tag holds the icon geometry. -->
+    <Style x:Key="NavItem" TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{StaticResource Brush.TextMuted}" />
+        <Setter Property="FontFamily" Value="{StaticResource Font.Main}" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Chrome" Background="Transparent" CornerRadius="{StaticResource Radius.Control}" Height="44" Padding="14,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Path Data="{TemplateBinding Tag}" Style="{StaticResource Icon}" Fill="{TemplateBinding Foreground}" Margin="0,0,12,0" />
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.Card}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource Brush.SecondarySoft}" />
+                            <Setter Property="Foreground" Value="{StaticResource Brush.Text}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Slim scrollbar -->
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="MinWidth" Value="10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                            <Thumb>
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border Background="{StaticResource Brush.BorderStrong}" CornerRadius="4" Margin="2" />
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Track.Thumb>
+                    </Track>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.Card}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Card}" />
+    </Style>
+
+</ResourceDictionary>

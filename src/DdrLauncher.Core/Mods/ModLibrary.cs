@@ -167,12 +167,6 @@ public sealed class ModLibrary
         return kept;
     }
 
-    public void Rename(ModEntry mod, string name)
-    {
-        mod.Name = string.IsNullOrWhiteSpace(name) ? mod.Name : name.Trim();
-        SaveIndex();
-    }
-
     private void EnsureGameClosed()
     {
         if (_isGameRunning())

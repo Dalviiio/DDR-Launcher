@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DdrLauncher.App/DdrLauncher.App.csproj" />
+    <Project Path="src/DdrLauncher.Core/DdrLauncher.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DdrLauncher.Core.Tests/DdrLauncher.Core.Tests.csproj" />
+  </Folder>
+</Solution>
