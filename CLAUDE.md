@@ -49,6 +49,7 @@ tests/
 ## Design
 
 - Modern and rounded. Background `#101548`, secondary `#6728D0`, tertiary `#2C77DA`. Small variants of these three are allowed (hover, pressed, surfaces), nothing far from them.
+- No emoji anywhere (UI, docs, code). Use vector icons only (Fluent UI geometries, as in V Mods Manager).
 - Ease of use comes first: the common action on each screen is obvious, nothing needs a manual. Use the `ui-ux-pro-max` skill for screens.
 
 ## Safety rules
