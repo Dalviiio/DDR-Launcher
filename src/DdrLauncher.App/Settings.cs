@@ -1,5 +1,4 @@
 using System.IO;
-using System.Text.Json;
 
 namespace DdrLauncher.App;
 
@@ -13,22 +12,7 @@ public sealed class Settings
 
     public string? GameFolder { get; set; }
 
-    public static Settings Load()
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new();
-        }
-        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException)
-        {
-            return new();
-        }
-    }
+    public static Settings Load() => JsonFile.Load<Settings>(FilePath);
 
-    public void Save()
-    {
-        Directory.CreateDirectory(DataFolder);
-        File.WriteAllText(FilePath + ".tmp", JsonSerializer.Serialize(this));
-        File.Move(FilePath + ".tmp", FilePath, overwrite: true);
-    }
+    public void Save() => JsonFile.Save(FilePath, this);
 }

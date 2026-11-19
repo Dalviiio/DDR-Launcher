@@ -11,6 +11,7 @@ public sealed partial class GameInstall
 {
     public const string SteamFolderName = "Dakar Desert Rally";
     public const string ProjectFolderName = "Dakar2Game";
+    public const string SteamAppId = "1839940";
 
     public GameInstall(string folder)
     {
@@ -45,18 +46,16 @@ public sealed partial class GameInstall
     /// <summary>Looks for the game in every Steam library. Returns null when it is not found.</summary>
     public static GameInstall? FindOnSteam()
     {
-        var steam = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
+        var steam = SteamPath();
         if (steam is null)
         {
             return null;
         }
 
-        var libraries = new List<string> { steam };
+        // The vdf keeps the real letter case; the registry value is lower case, so it only comes last.
         var vdf = Path.Combine(steam, "steamapps", "libraryfolders.vdf");
-        if (File.Exists(vdf))
-        {
-            libraries.AddRange(LibraryPaths(File.ReadAllText(vdf)));
-        }
+        var libraries = File.Exists(vdf) ? LibraryPaths(File.ReadAllText(vdf)).ToList() : [];
+        libraries.Add(steam);
 
         return libraries
             .Select(l => Path.Combine(l, "steamapps", "common", SteamFolderName))
@@ -64,6 +63,9 @@ public sealed partial class GameInstall
             .Select(f => new GameInstall(f))
             .FirstOrDefault();
     }
+
+    /// <summary>Steam's own folder, from the registry; null when Steam is not installed.</summary>
+    public static string? SteamPath() => Registry.GetValue(@"HKEY_CURRENT_USER\Software\Valve\Steam", "SteamPath", null) as string;
 
     /// <summary>Reads the library folders listed in Steam's libraryfolders.vdf.</summary>
     internal static IEnumerable<string> LibraryPaths(string vdf) =>

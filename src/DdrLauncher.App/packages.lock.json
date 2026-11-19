@@ -2,15 +2,49 @@
   "version": 1,
   "dependencies": {
     "net8.0-windows7.0": {
+      "BCnEncoder.Net": {
+        "type": "Transitive",
+        "resolved": "2.2.1",
+        "contentHash": "tI5+/OQo0kciLqWrViRjpOH+IL3FjexYnoWZajiGV41g/EM9CGbWsxsPzBDmpoxNkrV9uox/EtIhCIi9chBSFw==",
+        "dependencies": {
+          "CommunityToolkit.HighPerformance": "8.4.0"
+        }
+      },
+      "CommunityToolkit.HighPerformance": {
+        "type": "Transitive",
+        "resolved": "8.4.0",
+        "contentHash": "flxspiBs0G/0GMp7IK2J2ijV9bTG6hEwFc/z6ekHqB6nwRJ4Ry2yLdx+TkbCUYFCl4XhABkAwomeKbT6zM2Zlg=="
+      },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.3",
+        "contentHash": "HrC5BXdl00IP9zeV+0Z848QWPAoCr9P3bDEZguI+gkLcBKAOxix/tLEAAHC+UvDNPv4a2d18lOReHMOagPa+zQ=="
+      },
       "SharpCompress": {
         "type": "Transitive",
         "resolved": "0.50.5",
         "contentHash": "wAEAxPV67rmS3IlIm+tvGNPJXEtZNqlwkZrwJZAvz0AagZP0qLtT4mM2hk8S+uO0Kx+wYoy/FsADQpHwsN5y3g=="
       },
+      "UAssetAPI": {
+        "type": "Transitive",
+        "resolved": "1.1.0",
+        "contentHash": "J71ZHs9VdLDhLP9Tqa6drMqF2/UgEMZm4ahfGeCiPBxOf5MzY7/s4ZWT3VdTrLy+daTnf1jMnMTVzjauHsyy0A==",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.3",
+          "ZstdSharp.Port": "0.8.1"
+        }
+      },
+      "ZstdSharp.Port": {
+        "type": "Transitive",
+        "resolved": "0.8.1",
+        "contentHash": "19tNz33kn2EkyViFXuxfVn338UJaRmkwBphVqP2dVJIYQUQgFrgG5h061mxkRRg1Ax6r+6WOj1FxaFZ5qaWqqg=="
+      },
       "ddrlauncher.core": {
         "type": "Project",
         "dependencies": {
-          "SharpCompress": "[0.50.5, )"
+          "BCnEncoder.Net": "[2.2.1, )",
+          "SharpCompress": "[0.50.5, )",
+          "UAssetAPI": "[1.1.0, )"
         }
       }
     }

@@ -167,13 +167,7 @@ public sealed class ModLibrary
         return kept;
     }
 
-    private void EnsureGameClosed()
-    {
-        if (_isGameRunning())
-        {
-            throw new InvalidOperationException("Close Dakar Desert Rally first: its mods cannot change while it is running.");
-        }
-    }
+    private void EnsureGameClosed() => ModsGuard.EnsureGameClosed(_isGameRunning);
 
     private static bool NameEquals(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
@@ -323,7 +317,6 @@ public sealed class ModLibrary
     private void SaveIndex()
     {
         var path = Path.Combine(_root, IndexFile);
-        File.WriteAllText(path + ".tmp", JsonSerializer.Serialize(_mods, Json));
-        File.Move(path + ".tmp", path, overwrite: true);
+        AtomicFile.WriteText(path, JsonSerializer.Serialize(_mods, Json));
     }
 }

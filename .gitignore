@@ -18,9 +18,13 @@ appsettings.*.local.json
 TestResults/
 /publish/
 *.pak
+# Tiny test paks built with repak from generated files, not game data
+!tests/DdrLauncher.Core.Tests/Fixtures/*.pak
 *.utoc
 *.ucas
 *.uasset
 *.uexp
 CLAUDE.md
 CLAUDE.local.md
+# Oodle library (RAD/Epic), copied in by hand for development
+oo2core_*.dll

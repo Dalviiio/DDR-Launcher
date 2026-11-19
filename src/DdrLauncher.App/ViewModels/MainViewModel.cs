@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.IO;
-using System.Windows.Input;
-using System.Windows.Threading;
+using System.Windows.Data;
 using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Game;
 using DdrLauncher.Core.Mods;
@@ -13,11 +13,12 @@ public sealed class MainViewModel : ObservableObject
 {
     private readonly Settings _settings = Settings.Load();
     private readonly ModLibrary _library;
-    private readonly DispatcherTimer _messageTimer = new() { Interval = TimeSpan.FromSeconds(7) };
     private GameInstall? _game;
+    private ModItemViewModel? _selectedMod;
     private bool _isBusy;
-    private string? _message;
-    private bool _messageIsError;
+    private string _status = "Ready";
+    private bool _statusIsError;
+    private string _filter = "All";
 
     public MainViewModel()
     {
@@ -34,56 +35,91 @@ public sealed class MainViewModel : ObservableObject
             _settings.Save();
         }
 
-        _messageTimer.Tick += (_, _) => Message = null;
+        ModsView = CollectionViewSource.GetDefaultView(Mods);
+        ModsView.Filter = o => o is ModItemViewModel m && (_filter == "All" || m.IsEnabled == (_filter == "On"));
         Mods.CollectionChanged += (_, _) => RaiseCounts();
-        DismissMessageCommand = new RelayCommand(() => Message = null);
+        RaiseCounts();
+        Database.Report = Report;
+        _ = Database.LoadAsync(_game);
     }
+
+    /// <summary>The game's vehicles and drivers.</summary>
+    public DatabaseViewModel Database { get; } = new();
+
+    /// <summary>The mod cards shown, after the All / On / Off filter.</summary>
+    public ICollectionView ModsView { get; }
+
+    public string Filter
+    {
+        get => _filter;
+        set
+        {
+            if (Set(ref _filter, value))
+            {
+                ModsView.Refresh();
+            }
+        }
+    }
+
+    public int OnCount => Mods.Count(m => m.IsEnabled);
+
+    public int OffCount => Mods.Count - OnCount;
 
     public ObservableCollection<ModItemViewModel> Mods { get; } = [];
 
-    public ICommand DismissMessageCommand { get; }
+    public GameInstall? Game => _game;
 
     public bool HasGame => _game is not null;
 
     public string GameFolderText => _game?.Folder ?? "Not found";
 
+    public string DataFolder => Settings.DataFolder;
+
+    public string VersionText { get; } = "v" + typeof(MainViewModel).Assembly.GetName().Version!.ToString(3);
+
+    /// <summary>The game's cover from Steam's own cache, shown in the game bar; nothing is copied.</summary>
+    public string? CoverImage { get; } = SteamImage("library_600x900.jpg");
+
+    /// <summary>The game's wide artwork from Steam's cache, behind the page title.</summary>
+    public string? HeroImage { get; } = SteamImage("library_hero.jpg");
+
+    public string Summary => Mods.Count == 0 ? "Empty" : DatabaseViewModel.Count(Mods.Count, "mod");
+
     public bool HasMods => Mods.Count > 0;
 
-    public string Summary => Mods.Count == 0
-        ? "Add a mod to get started"
-        : $"{Mods.Count} {(Mods.Count == 1 ? "mod" : "mods")}, {Mods.Count(m => m.IsEnabled)} enabled";
-
-    public bool IsBusy
+    public ModItemViewModel? SelectedMod
     {
-        get => _isBusy;
-        private set => Set(ref _isBusy, value);
-    }
-
-    public string? Message
-    {
-        get => _message;
-        private set
+        get => _selectedMod;
+        set
         {
-            if (Set(ref _message, value))
+            if (Set(ref _selectedMod, value))
             {
-                Raise(nameof(HasMessage));
+                Raise(nameof(HasSelection));
             }
         }
     }
 
-    public bool HasMessage => Message is not null;
+    public bool HasSelection => SelectedMod is not null;
 
-    public bool MessageIsError
+    public bool IsIdle => !_isBusy;
+
+    public string Status
     {
-        get => _messageIsError;
-        private set => Set(ref _messageIsError, value);
+        get => _status;
+        private set => Set(ref _status, value);
+    }
+
+    public bool StatusIsError
+    {
+        get => _statusIsError;
+        private set => Set(ref _statusIsError, value);
     }
 
     public bool TrySetGameFolder(string folder)
     {
         if (!GameInstall.IsValid(folder))
         {
-            ShowMessage("This folder is not Dakar Desert Rally. Pick the folder that contains Dakar2Game.", error: true);
+            Report("Not a Dakar Desert Rally folder", error: true);
             return false;
         }
 
@@ -92,13 +128,14 @@ public sealed class MainViewModel : ObservableObject
         _settings.Save();
         Raise(nameof(HasGame));
         Raise(nameof(GameFolderText));
-        ShowMessage("Game folder saved.");
+        Report("Game folder set");
+        _ = Database.LoadAsync(_game);
         return true;
     }
 
     public async Task ImportAsync(IEnumerable<string> sources)
     {
-        var added = 0;
+        var added = new List<ModItemViewModel>();
         var errors = new List<string>();
         await RunBusy(async () =>
         {
@@ -107,80 +144,90 @@ public sealed class MainViewModel : ObservableObject
                 try
                 {
                     var mod = await Task.Run(() => _library.Import(source));
-                    Mods.Add(new ModItemViewModel(mod, this));
-                    added++;
+                    var item = new ModItemViewModel(mod, this);
+                    Mods.Add(item);
+                    added.Add(item);
                 }
                 catch (Exception e) when (e is ImportRejectedException or IOException or UnauthorizedAccessException)
                 {
-                    errors.Add($"{Path.GetFileName(source)}: {Reason(e)}");
+                    errors.Add($"{Path.GetFileName(Path.TrimEndingDirectorySeparator(source))}: {Reason(e)}");
                 }
             }
         });
 
+        if (added.Count > 0)
+        {
+            SelectedMod = added[^1];
+        }
+
         if (errors.Count > 0)
         {
-            ShowMessage($"Could not add {string.Join("; ", errors)}", error: true);
+            Report($"Not added: {string.Join("; ", errors)}", error: true);
         }
-        else if (added > 0)
+        else if (added.Count > 0)
         {
-            ShowMessage(added == 1 ? "Mod added. Switch it on to use it in the game." : $"{added} mods added. Switch them on to use them in the game.");
+            Report(added.Count == 1 ? $"{added[0].Name} added" : $"{added.Count} mods added");
         }
     }
 
-    /// <summary>Returns the state the mod really ends up in.</summary>
-    internal async Task<bool> SetEnabledAsync(ModItemViewModel item, bool enabled)
+    internal async Task SetEnabledAsync(ModItemViewModel item, bool enabled)
     {
         if (_game is null)
         {
-            ShowMessage("Choose the game folder first.", error: true);
-            return item.Model.Enabled;
+            Report("Set the game folder", error: true);
+            return;
         }
 
-        var game = _game;
+        var modsFolder = _game.ModsFolder;
         IReadOnlyList<string> kept = [];
+        var failed = false;
         await RunBusy(async () =>
         {
             try
             {
                 if (enabled)
                 {
-                    await Task.Run(() => _library.Enable(item.Model, game.ModsFolder));
+                    await Task.Run(() => _library.Enable(item.Model, modsFolder));
                 }
                 else
                 {
-                    kept = await Task.Run(() => _library.Disable(item.Model, game.ModsFolder));
+                    kept = await Task.Run(() => _library.Disable(item.Model, modsFolder));
                 }
             }
             catch (Exception e) when (e is InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                ShowMessage(Reason(e), error: true);
+                failed = true;
+                Report(Reason(e), error: true);
             }
         });
 
         if (kept.Count > 0)
         {
-            ShowMessage($"Left in the game because they changed since they were placed: {string.Join(", ", kept)}", error: true);
+            Report($"Kept because they changed since they were added: {string.Join(", ", kept)}", error: true);
+        }
+        else if (!failed)
+        {
+            Report(enabled ? $"{item.Name} on" : $"{item.Name} off");
         }
 
         RaiseCounts();
-        return item.Model.Enabled;
     }
 
     internal async Task RemoveAsync(ModItemViewModel item)
     {
         IReadOnlyList<string> kept = [];
         var removed = false;
-        var game = _game;
+        var modsFolder = _game?.ModsFolder;
         await RunBusy(async () =>
         {
             try
             {
-                kept = await Task.Run(() => _library.Remove(item.Model, game?.ModsFolder));
+                kept = await Task.Run(() => _library.Remove(item.Model, modsFolder));
                 removed = true;
             }
             catch (Exception e) when (e is InvalidOperationException or IOException or UnauthorizedAccessException)
             {
-                ShowMessage(Reason(e), error: true);
+                Report(Reason(e), error: true);
             }
         });
 
@@ -190,32 +237,29 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Mods.Remove(item);
-        ShowMessage(kept.Count > 0
-            ? $"'{item.Name}' removed. Left in the game because they changed: {string.Join(", ", kept)}"
-            : $"'{item.Name}' removed.", error: kept.Count > 0);
+        Report(kept.Count > 0
+            ? $"{item.Name} removed. Kept because they changed since they were added: {string.Join(", ", kept)}"
+            : $"{item.Name} removed", error: kept.Count > 0);
+    }
+
+    public void Report(string text, bool error = false)
+    {
+        StatusIsError = error;
+        Status = text;
     }
 
     private async Task RunBusy(Func<Task> action)
     {
-        IsBusy = true;
+        _isBusy = true;
+        Raise(nameof(IsIdle));
         try
         {
             await action();
         }
         finally
         {
-            IsBusy = false;
-        }
-    }
-
-    private void ShowMessage(string text, bool error = false)
-    {
-        MessageIsError = error;
-        Message = text;
-        _messageTimer.Stop();
-        if (!error)
-        {
-            _messageTimer.Start();
+            _isBusy = false;
+            Raise(nameof(IsIdle));
         }
     }
 
@@ -223,6 +267,21 @@ public sealed class MainViewModel : ObservableObject
     {
         Raise(nameof(HasMods));
         Raise(nameof(Summary));
+        Raise(nameof(OnCount));
+        Raise(nameof(OffCount));
+        for (var i = 0; i < Mods.Count; i++)
+        {
+            Mods[i].Number = i + 1;
+        }
+
+        ModsView?.Refresh();
+    }
+
+    private static string? SteamImage(string fileName)
+    {
+        var steam = GameInstall.SteamPath();
+        var image = steam is null ? null : Path.Combine(steam, "appcache", "librarycache", GameInstall.SteamAppId, fileName);
+        return File.Exists(image) ? image : null;
     }
 
     private static string Reason(Exception e) => e is ImportRejectedException r ? r.Reason : e.Message;

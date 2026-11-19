@@ -8,11 +8,14 @@
     <RootNamespace>DdrLauncher.App</RootNamespace>
     <Version>0.1.0</Version>
     <Product>Dalviiio DDR Launcher</Product>
+    <ApplicationIcon>Assets\DalviiioDDRLauncher.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Nunito Sans (SIL Open Font License) is embedded; its license ships next to the executable. -->
     <Resource Include="Fonts\*.ttf" />
+    <Resource Include="Assets\DalviiioDDRLauncher.ico" />
+    <Resource Include="Assets\logo-128.png" />
     <None Include="Fonts\OFL.txt" Link="Licenses\NunitoSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
