@@ -58,8 +58,8 @@ public sealed record CarModel(float[] Positions, float[] Uvs, IReadOnlyList<CarS
 }
 
 /// <summary>
-/// Reads 3D models out of the paks the game loads (mods included). Mounting the paks takes about a second, so one instance
-/// is meant to be kept. Mod paks are untrusted: what cannot be read gives no model.
+/// Reads 3D models out of the paks the game loads (mods included). The paks stay open only while a model is read:
+/// an open pak in ~mods could not be replaced or moved. Mod paks are untrusted: what cannot be read gives no model.
 /// </summary>
 public sealed class GameModels : IDisposable
 {
@@ -68,7 +68,7 @@ public sealed class GameModels : IDisposable
 
     private readonly DefaultFileProvider _provider;
 
-    public GameModels(GameInstall game, string[] oodleFolders)
+    private GameModels(GameInstall game, string[] oodleFolders)
     {
         var oodle = oodleFolders.Select(f => Path.Combine(f, Oodle.LibraryName)).FirstOrDefault(File.Exists)
             ?? throw new OodleMissingException();
@@ -90,7 +90,13 @@ public sealed class GameModels : IDisposable
     }
 
     /// <summary>The model of the vehicle whose game class is <paramref name="blueprint"/> ("/DakarGame/.../B_X.B_X_C"); null when it cannot be read.</summary>
-    public CarModel? Car(string blueprint)
+    public static CarModel? Car(GameInstall game, string[] oodleFolders, string blueprint)
+    {
+        using var models = new GameModels(game, oodleFolders);
+        return models.Car(blueprint);
+    }
+
+    private CarModel? Car(string blueprint)
     {
         try
         {

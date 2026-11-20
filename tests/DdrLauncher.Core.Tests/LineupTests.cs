@@ -73,6 +73,15 @@ public class LineupPlanTests
 
             Assert.Equal("two", File.ReadAllText(path));
             Assert.False(File.Exists(path + ".tmp"));
+
+            // The target is held open without sharing, as an open pak is: the move fails and the temporary file goes.
+            using (File.Open(path, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                Assert.Throws<UnauthorizedAccessException>(() => DdrLauncher.Core.Safety.AtomicFile.WriteText(path, "three"));
+            }
+
+            Assert.Equal("two", File.ReadAllText(path));
+            Assert.False(File.Exists(path + ".tmp"));
         }
         finally
         {

@@ -25,8 +25,6 @@ public sealed partial class DatabaseViewModel
     /// <summary>The painted livery pictures, named by their SHA-256.</summary>
     internal static readonly string LiveryFolder = Path.Combine(Settings.DataFolder, "Liveries");
 
-    private Task<GameModels>? _models;
-
     private readonly LineupStore _store = LineupStore.Load();
     private List<CrewItem> _crews = [];
     private Dictionary<(string Table, string Row), CrewItem> _crewIndex = [];
@@ -365,7 +363,7 @@ public sealed partial class DatabaseViewModel
         return TextureDecoder.Decode(files.Uexp, maxWidth, files.Ubulk);
     }
 
-    /// <summary>The car's 3D model; null when it cannot be read. The game's paks are mounted once, on first use.</summary>
+    /// <summary>The car's 3D model; null when it cannot be read.</summary>
     public async Task<CarModel?> CarAsync(string blueprint)
     {
         if (_game is not { } game)
@@ -375,12 +373,10 @@ public sealed partial class DatabaseViewModel
 
         try
         {
-            var models = await (_models ??= Task.Run(() => new GameModels(game, OodleFolders)));
-            return await Task.Run(() => models.Car(blueprint));
+            return await Task.Run(() => GameModels.Car(game, OodleFolders, blueprint));
         }
         catch (Exception e) when (e is IOException or OodleMissingException or InvalidOperationException or UnauthorizedAccessException)
         {
-            _models = null;
             return null;
         }
     }

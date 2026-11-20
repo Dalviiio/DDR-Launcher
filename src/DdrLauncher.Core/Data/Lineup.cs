@@ -126,7 +126,15 @@ public static class Lineup
         }
 
         Directory.CreateDirectory(modsFolder);
-        AtomicFile.Write(target, pak);
+        try
+        {
+            AtomicFile.Write(target, pak);
+        }
+        catch (UnauthorizedAccessException e)
+        {
+            throw new InvalidOperationException($"Another program has {PakName} open. Close it, then apply again.", e);
+        }
+
         return FileHasher.Sha256(target);
     }
 

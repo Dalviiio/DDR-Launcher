@@ -11,12 +11,20 @@ public static class AtomicFile
     public static void Write(string path, Action<Stream> write)
     {
         var temp = path + ".tmp";
-        using (var stream = File.Create(temp))
+        try
         {
-            write(stream);
-        }
+            using (var stream = File.Create(temp))
+            {
+                write(stream);
+            }
 
-        File.Move(temp, path, overwrite: true);
+            File.Move(temp, path, overwrite: true);
+        }
+        catch
+        {
+            File.Delete(temp);
+            throw;
+        }
     }
 
     public static void Write(string path, byte[] bytes) => Write(path, s => s.Write(bytes));
