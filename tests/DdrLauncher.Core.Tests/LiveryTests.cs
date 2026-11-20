@@ -37,7 +37,7 @@ public sealed class LiveryTests
         var small = TextureDecoder.Decode([.. uexp], 4);
         Assert.Equal(new byte[] { 255, 0, 0 }, small!.Bgra[..3]);
 
-        // Without the .ubulk, the big mip is skipped rather than read out of thin air.
+        // Without the .ubulk, the big mip is skipped.
         Assert.Equal(4, TextureDecoder.Decode([.. uexp], 8)!.Width);
     }
 

@@ -338,8 +338,8 @@ internal sealed class LiveryWindow
         _reset.IsEnabled = Selected?.Image is not null;
         _save.IsEnabled = _changed;
         _status.Text = _message
-            ?? (!_db.CanEdit ? "Default is the game as it ships. Make a profile to paint this livery; Export works here too."
-                : Selected is { } part ? $"{part.Label}: pictures are {part.Width} x {part.Height}, others are resized." : "");
+            ?? (!_db.CanEdit ? "Default is the game as it ships. To paint this livery, make a profile. Export works on Default too."
+                : Selected is { } part ? $"{part.Label} takes {part.Width} x {part.Height} pictures. Other sizes are resized." : "");
     }
 
     // "M_Wheels_FL", "M_SpareWheel_L"... -> "Wheels, SpareWheel"

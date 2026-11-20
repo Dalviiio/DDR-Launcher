@@ -15,7 +15,7 @@
     <!-- Nunito Sans (SIL Open Font License) is embedded; its license ships next to the executable. -->
     <Resource Include="Fonts\*.ttf" />
     <Resource Include="Assets\DalviiioDDRLauncher.ico" />
-    <Resource Include="Assets\logo-128.png" />
+    <Resource Include="Assets\logo-ddr.png" />
     <None Include="Fonts\OFL.txt" Link="Licenses\NunitoSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
