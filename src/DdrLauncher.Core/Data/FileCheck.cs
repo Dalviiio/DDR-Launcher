@@ -125,7 +125,8 @@ public static class FileCheck
             var root = pak.MountPoint.StartsWith("../../../", StringComparison.Ordinal) ? pak.MountPoint["../../../".Length..] : "";
             return pak.Files.Select(f => root + f).ToList();
         }
-        catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or EndOfStreamException)
+        // A mod pak is untrusted: whatever it breaks in the reader only means it cannot be read.
+        catch (Exception e) when (e is not OutOfMemoryException)
         {
             return null;
         }

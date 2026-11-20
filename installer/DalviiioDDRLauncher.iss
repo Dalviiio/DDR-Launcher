@@ -30,8 +30,10 @@ UninstallDisplayName={#AppName}
 WizardStyle=modern
 Compression=lzma2/ultra64
 SolidCompression=yes
-; The installer opens in the Windows language when it has it; the launcher then starts in the language picked here.
-ShowLanguageDialog=auto
+; The installer starts in English and lists its languages to pick another. The launcher itself follows Windows' language.
+ShowLanguageDialog=yes
+LanguageDetectionMethod=none
+UsePreviousLanguage=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -91,43 +93,32 @@ Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopico
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; An update started from the launcher runs silently: open the launcher again once the new version is in place.
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: WizardSilent
 
 [Code]
 const
   LauncherLock = 'Local\DalviiioDDRLauncher';
 
 function InitializeSetup(): Boolean;
+var
+  I: Integer;
 begin
-  { Never install while the launcher is open (same lock as its single instance). A silent install gives up instead of asking. }
+  { Never install while the launcher is open (same lock as its single instance). After an update started from the launcher,
+    it closes by itself: wait a few seconds for it. A silent install then gives up instead of asking. }
   Result := True;
+  for I := 1 to 20 do
+  begin
+    if not CheckForMutexes(LauncherLock) then
+      Exit;
+    Sleep(500);
+  end;
   while CheckForMutexes(LauncherLock) do
     if SuppressibleMsgBox(CustomMessage('LauncherOpen'), mbError, MB_RETRYCANCEL, IDCANCEL) = IDCANCEL then
     begin
       Result := False;
       Exit;
     end;
-end;
-
-function LanguageCode(): String;
-begin
-  case ActiveLanguage of
-    'french': Result := 'fr';
-    'german': Result := 'de';
-    'spanish': Result := 'es';
-    'italian': Result := 'it';
-    'portuguese': Result := 'pt';
-    'russian': Result := 'ru';
-    'japanese': Result := 'ja';
-  else
-    Result := 'en';
-  end;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  { The launcher applies this choice once, on its next start, then deletes the file. }
-  if CurStep = ssPostInstall then
-    SaveStringToFile(ExpandConstant('{app}\install-options.json'), '{ "language": "' + LanguageCode() + '" }', False);
 end;
 
 function InitializeUninstall(): Boolean;

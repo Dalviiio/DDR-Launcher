@@ -1,6 +1,8 @@
 using System.IO;
-using System.Text.Json;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
+using DdrLauncher.App.Controls;
 using DdrLauncher.App.Localization;
 using DdrLauncher.Core.Data;
 using DdrLauncher.Core.Game;
@@ -11,11 +13,15 @@ namespace DdrLauncher.App;
 
 public partial class App : Application
 {
+    /// <summary>The GitHub repository whose releases hold the signed installers.</summary>
+    public const string ReleaseRepository = "Dalviiio/DDR-Launcher";
+
+    /// <summary>The author's public signing key: an update installs only when its installer is signed with the matching private key.</summary>
+    public const string UpdatePublicKey =
+        "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEl7qwqZrV3AKrL0BGvBb0j74/q5LwTG1//AM6vza+Nm92FgRrAedVH3Q4LimSZzsEp29SZIJ7sYweQOvgiJVI2A==";
+
     /// <summary>Started by the uninstaller: takes the launcher's changes out of the game, then exits.</summary>
     public const string UninstallCleanup = "--uninstall-cleanup";
-
-    /// <summary>Left next to the exe by the installer with the choices made there; applied once, then deleted.</summary>
-    private const string InstallOptionsFile = "install-options.json";
 
     // Two launchers writing the same library index would corrupt it.
     private Mutex? _singleInstance;
@@ -24,7 +30,6 @@ public partial class App : Application
     {
         _singleInstance = new Mutex(true, @"Local\DalviiioDDRLauncher", out var first);
         var settings = Settings.Load();
-        ApplyInstallOptions(settings);
         Translator.Instance.Use(Translator.Pick(settings.Language));
 
         if (e.Args.Contains(UninstallCleanup, StringComparer.OrdinalIgnoreCase))
@@ -41,6 +46,16 @@ public partial class App : Application
             return;
         }
 
+        // An unexpected error is written to the log and shown; the launcher keeps running when it can.
+        DispatcherUnhandledException += OnUnexpectedError;
+        AppDomain.CurrentDomain.UnhandledException += (_, args) => Log.Error("Unhandled", args.ExceptionObject as Exception);
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            Log.Error("Background task", args.Exception);
+            args.SetObserved();
+        };
+
+        Log.Info($"Started version {typeof(App).Assembly.GetName().Version!.ToString(3)} in {Translator.Instance.Current.Code}");
         base.OnStartup(e);
         new MainWindow().Show();
     }
@@ -51,30 +66,17 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    // The language picked in the installer becomes the launcher's.
-    private static void ApplyInstallOptions(Settings settings)
+    private static void OnUnexpectedError(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, InstallOptionsFile);
-        if (!File.Exists(path))
+        Log.Error("Unexpected error", e.Exception);
+        e.Handled = true;
+        var dialog = new DialogWindow(T("Something went wrong"),
+            DialogWindow.MessageText(T("{0}\n\nThe launcher keeps running. The details are in its log: {1}", e.Exception.Message, Log.FilePath)), DialogKind.Error)
         {
-            return;
-        }
-
-        try
-        {
-            if (JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(path)) is { } options
-                && options.TryGetValue("language", out var code) && Translator.Languages.Any(l => l.Code == code))
-            {
-                settings.Language = code;
-                settings.Save();
-            }
-
-            File.Delete(path);
-        }
-        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException)
-        {
-            // A damaged or locked file is ignored: the launcher follows Windows' language.
-        }
+            Owner = Current.MainWindow is { IsLoaded: true } window ? window : null,
+        };
+        dialog.AddButton(T("Close"), null, primary: true);
+        dialog.ShowDialog();
     }
 
     // Leaves the game as it ships: the launcher's pak and the mods it placed go, each only if unchanged since placed.
@@ -109,6 +111,48 @@ public partial class App : Application
         {
             MessageBox.Show(e.Message, "Dalviiio DDR Launcher", MessageBoxButton.OK, MessageBoxImage.Warning);
             return 1;
+        }
+    }
+}
+
+/// <summary>
+/// The launcher's log (Logs/launcher.log in its data folder): what it did and what went wrong, for bug reports.
+/// The user's folder is written as %USERPROFILE%, and the log starts over when it grows past 1 MB.
+/// </summary>
+public static class Log
+{
+    public static readonly string FilePath = Path.Combine(Settings.DataFolder, "Logs", "launcher.log");
+
+    private static readonly object Lock = new();
+
+    private static readonly string Profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+
+    public static void Info(string message) => Write("INFO", message);
+
+    public static void Warn(string message) => Write("WARN", message);
+
+    public static void Error(string context, Exception? e) => Write("ERROR", $"{context}: {e}");
+
+    private static void Write(string level, string message)
+    {
+        lock (Lock)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+                if (File.Exists(FilePath) && new FileInfo(FilePath).Length > 1 << 20)
+                {
+                    File.Move(FilePath, FilePath + ".old", overwrite: true);
+                }
+
+                // Logs end up in public bug reports: the user's folder (and so their name) is not written.
+                message = message.Replace(Profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
+                File.AppendAllText(FilePath, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} {level} {message}{Environment.NewLine}");
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // A log that cannot be written must never stop the launcher.
+            }
         }
     }
 }

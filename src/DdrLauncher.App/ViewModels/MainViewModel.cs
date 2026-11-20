@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows.Data;
 using DdrLauncher.App.Localization;
 using DdrLauncher.App.Mvvm;
+using DdrLauncher.Core;
 using DdrLauncher.Core.Game;
 using DdrLauncher.Core.Mods;
 using DdrLauncher.Core.Safety;
@@ -21,6 +22,7 @@ public sealed class MainViewModel : ObservableObject
     private string _status = T("Ready");
     private bool _statusIsError;
     private string _filter = "All";
+    private AvailableUpdate? _update;
 
     public MainViewModel()
     {
@@ -77,7 +79,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string DataFolder => Settings.DataFolder;
 
-    public string VersionText { get; } = "v" + typeof(MainViewModel).Assembly.GetName().Version!.ToString(3);
+    public string VersionText { get; } = "v" + Version;
 
     public IReadOnlyList<Language> Languages => Translator.Languages;
 
@@ -118,9 +120,54 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public string OodleText => DatabaseViewModel.HasOodle ? T("Found") : T("Missing: the Paddock needs it to read the game");
+    /// <summary>The version this launcher is: "0.4.0".</summary>
+    public static string Version => typeof(MainViewModel).Assembly.GetName().Version!.ToString(3);
 
-    public void RaiseOodle() => Raise(nameof(OodleText));
+    /// <summary>Settings: look for a new version at each start.</summary>
+    public bool CheckForUpdates
+    {
+        get => _settings.CheckForUpdates == true;
+        set
+        {
+            _settings.CheckForUpdates = value;
+            _settings.Save();
+            Raise();
+        }
+    }
+
+    /// <summary>True until the user said whether to look for new versions.</summary>
+    public bool UpdatesNotAsked => _settings.CheckForUpdates is null;
+
+    /// <summary>A newer version found on GitHub; null when there is none or it was not looked for.</summary>
+    public AvailableUpdate? Update
+    {
+        get => _update;
+        set
+        {
+            if (Set(ref _update, value))
+            {
+                Raise(nameof(HasUpdate));
+                Raise(nameof(UpdateText));
+            }
+        }
+    }
+
+    public bool HasUpdate => Update is not null;
+
+    public string UpdateText => Update is { } update ? T("Update to {0}", update.Version) : "";
+
+    public UpdateService Updates { get; } =
+        new(App.ReleaseRepository, App.UpdatePublicKey, Path.Combine(Settings.DataFolder, "Updates"));
+
+    public bool OodleFound => DatabaseViewModel.HasOodle;
+
+    public string OodleText => T(OodleFound ? "Found" : "Missing");
+
+    public void RaiseOodle()
+    {
+        Raise(nameof(OodleFound));
+        Raise(nameof(OodleText));
+    }
 
     /// <summary>The game's cover from Steam's own cache, shown in the game bar; nothing is copied.</summary>
     public string? CoverImage { get; } = SteamImage("library_600x900.jpg");
@@ -289,6 +336,11 @@ public sealed class MainViewModel : ObservableObject
 
     public void Report(string text, bool error = false)
     {
+        if (error)
+        {
+            Log.Warn(text);
+        }
+
         StatusIsError = error;
         Status = text;
     }

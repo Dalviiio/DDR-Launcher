@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Windows;
 using DdrLauncher.App.Controls;
 using DdrLauncher.App.ViewModels;
+using DdrLauncher.Core;
 using Microsoft.Win32;
 using static DdrLauncher.App.Localization.Translator;
 
@@ -27,6 +29,74 @@ public partial class MainWindow : Window
             Root.Margin = maximized ? new Thickness(7) : new Thickness(0);
             Root.CornerRadius = maximized ? new CornerRadius(0) : new CornerRadius(24);
         };
+        Loaded += async (_, _) => await CheckForUpdateAsync();
+    }
+
+    // At start: ask once whether to look for new versions, then look quietly; a failed check only goes to the log.
+    private async Task CheckForUpdateAsync()
+    {
+        if (_vm.UpdatesNotAsked)
+        {
+            _vm.CheckForUpdates = Confirm(T("Check for new versions?"),
+                T("Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.", App.ReleaseRepository),
+                T("Check"), DialogKind.Info);
+        }
+
+        if (!_vm.CheckForUpdates)
+        {
+            return;
+        }
+
+        try
+        {
+            _vm.Update = await _vm.Updates.CheckAsync(MainViewModel.Version);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or FormatException or ArgumentException)
+        {
+            Log.Warn("Update check: " + e.Message);
+            return;
+        }
+
+        if (_vm.Update is { } update)
+        {
+            Log.Info($"Version {update.Version} is available");
+            if (Confirm(T("A new version is available"), UpdateMessage(update), T("Update"), DialogKind.Info))
+            {
+                await InstallUpdateAsync(update);
+            }
+        }
+    }
+
+    private async void OnUpdate(object sender, RoutedEventArgs e)
+    {
+        if (_vm.Update is { } update && Confirm(T("A new version is available"), UpdateMessage(update), T("Update"), DialogKind.Info))
+        {
+            await InstallUpdateAsync(update);
+        }
+    }
+
+    private static string UpdateMessage(AvailableUpdate update) =>
+        T("Dalviiio DDR Launcher {0} is available (you have {1}).", update.Version, MainViewModel.Version)
+        + (string.IsNullOrWhiteSpace(update.Notes) ? "" : "\n\n" + T("What's new:") + "\n" + update.Notes.Trim())
+        + "\n\n" + T("The launcher closes, installs it and opens again. Your profiles, liveries and mods stay.");
+
+    // Downloads the signed installer, checks it, then hands over: the installer waits for the launcher to close and reopens it.
+    private async Task InstallUpdateAsync(AvailableUpdate update)
+    {
+        _vm.Report(T("Downloading version {0}...", update.Version));
+        try
+        {
+            var installer = await _vm.Updates.DownloadVerifiedAsync(update);
+            Log.Info($"Installing version {update.Version}");
+            Process.Start(new ProcessStartInfo(installer, "/SILENT /SUPPRESSMSGBOXES /NOCANCEL") { UseShellExecute = true });
+            Application.Current.Shutdown();
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or InvalidOperationException or IOException
+            or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            Log.Error("Update", e);
+            _vm.Report(T("The update did not work: {0}", e.Message), true);
+        }
     }
 
     private async void OnImportFiles(object sender, RoutedEventArgs e)

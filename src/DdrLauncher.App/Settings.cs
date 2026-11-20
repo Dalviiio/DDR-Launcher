@@ -17,6 +17,9 @@ public sealed class Settings
     /// <summary>The launcher's language code; null follows Windows.</summary>
     public string? Language { get; set; }
 
+    /// <summary>Look for a new version at each start; null until the user answered the first time.</summary>
+    public bool? CheckForUpdates { get; set; }
+
     /// <summary>What the launcher does once Play started the game: "Stay", "Minimize" or "Close".</summary>
     public string PlayAction { get; set; } = "Stay";
 

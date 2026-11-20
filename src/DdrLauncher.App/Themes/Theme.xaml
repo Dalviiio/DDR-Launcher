@@ -1019,6 +1019,45 @@
         </Setter>
     </Style>
 
+    <!-- Settings: a group of rows on one card, a thin line between rows, and a row (icon, name, hint from HelpText, control) -->
+    <Style x:Key="SettingGroup" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource Brush.Card}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Brush.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+    </Style>
+
+    <Style x:Key="SettingDivider" TargetType="Border">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="70,0,18,0" />
+        <Setter Property="Background" Value="{StaticResource Brush.Border}" />
+    </Style>
+
+    <Style x:Key="SettingRow" TargetType="HeaderedContentControl">
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="HeaderedContentControl">
+                    <DockPanel Margin="18,14" MinHeight="40">
+                        <Border DockPanel.Dock="Left" Width="38" Height="38" CornerRadius="11" Margin="0,0,14,0" VerticalAlignment="Center" Background="{StaticResource Brush.AccentSoft}">
+                            <Path Data="{TemplateBinding c:Ui.Icon}" Style="{StaticResource SmallIcon}" Fill="{StaticResource Brush.Text}" HorizontalAlignment="Center" />
+                        </Border>
+                        <ContentPresenter DockPanel.Dock="Right" VerticalAlignment="Center" Margin="16,0,0,0" />
+                        <StackPanel VerticalAlignment="Center">
+                            <ContentPresenter ContentSource="Header" TextElement.FontWeight="Bold" TextElement.FontSize="15" />
+                            <TextBlock x:Name="Hint" Text="{TemplateBinding AutomationProperties.HelpText}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="AutomationProperties.HelpText" Value="">
+                            <Setter TargetName="Hint" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Details drawer on the right of a page -->
     <Style x:Key="Drawer" TargetType="Border">
         <Setter Property="Width" Value="340" />

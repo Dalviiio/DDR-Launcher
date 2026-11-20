@@ -36,7 +36,8 @@ public static class GamePictures
                         failed.Add(byPath[path]);
                     }
                 }
-                catch (InvalidDataException)
+                // A picture from a mod is untrusted: one that breaks the decoder is skipped, the others still load.
+                catch (Exception e) when (e is not OutOfMemoryException)
                 {
                     failed.Add(byPath[path]);
                 }

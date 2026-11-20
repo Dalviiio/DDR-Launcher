@@ -62,7 +62,7 @@ public sealed partial class TranslationTests
         foreach (var file in Directory.EnumerateFiles(App, "*.cs", SearchOption.AllDirectories).Where(Source))
         {
             var code = File.ReadAllText(file);
-            used.UnionWith(CodeText().Matches(code).Select(m => m.Groups[1].Value));
+            used.UnionWith(CodeText().Matches(code).Select(m => m.Groups[1].Value.Replace(@"\n", "\n", StringComparison.Ordinal)));
             used.UnionWith(CountText().Matches(code).SelectMany(m => new[] { m.Groups[1].Value, m.Groups[2].Value }));
         }
 

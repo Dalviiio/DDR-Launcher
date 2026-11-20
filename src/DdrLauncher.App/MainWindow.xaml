@@ -56,6 +56,9 @@
 
             <!-- ===== Caption strip ===== -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,2,10,0">
+                <Button Style="{StaticResource PrimaryButton}" Content="{Binding UpdateText}" c:Ui.Icon="{StaticResource Icon.Sync}" Click="OnUpdate" Margin="0,0,10,0"
+                        Padding="10,3" MinHeight="26" FontSize="12" WindowChrome.IsHitTestVisibleInChrome="True"
+                        Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibility}}" />
                 <TextBlock Text="{Binding VersionText}" FontSize="12" Foreground="{StaticResource Brush.TextSubtle}" VerticalAlignment="Center" Margin="0,0,4,0" />
                 <RadioButton x:Name="SettingsNav" Style="{StaticResource IconToggle}" c:Ui.Icon="{StaticResource Icon.Settings}" GroupName="Nav" Margin="0,0,8,0"
                              WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{l:T 'Settings'}" AutomationProperties.Name="{l:T 'Settings'}" />
@@ -521,7 +524,7 @@
                             <StackPanel Visibility="{Binding HasError, Converter={StaticResource BoolToVisibility}}">
                                 <TextBlock Text="{Binding Error}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center" MaxWidth="420" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,14,0,0">
-                                    <Button Style="{StaticResource PrimaryButton}" Content="{l:T 'Download'}" c:Ui.Icon="{StaticResource Icon.Add}" Click="OnDownloadOodle" Margin="0,0,8,0"
+                                    <Button Style="{StaticResource PrimaryButton}" Content="{l:T 'Download'}" Click="OnDownloadOodle" Margin="0,0,8,0"
                                             Visibility="{Binding NeedsOodle, Converter={StaticResource BoolToVisibility}}" />
                                     <Button Content="{l:T 'Locate'}" c:Ui.Icon="{StaticResource Icon.FolderOpen}" Click="OnLocateOodle" Margin="0,0,8,0"
                                             Visibility="{Binding NeedsOodle, Converter={StaticResource BoolToVisibility}}" />
@@ -531,116 +534,120 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Settings page -->
+                    <!-- Settings page: three groups of rows, each row an icon, a name, an optional hint and its control -->
                     <ScrollViewer Grid.RowSpan="2" VerticalScrollBarVisibility="Auto"
                                   Visibility="{Binding IsChecked, ElementName=SettingsNav, Converter={StaticResource BoolToVisibility}}">
-                    <StackPanel Margin="32,28,32,24" MaxWidth="720" HorizontalAlignment="Left">
-                        <TextBlock Text="{l:T 'Settings'}" FontSize="30" FontWeight="ExtraBold" Margin="0,0,0,20" />
+                    <ScrollViewer.Resources>
+                        <!-- Buttons sit on cards of their own color: an outline shows them -->
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Setter Property="BorderBrush" Value="{StaticResource Brush.BorderStrong}" />
+                            <Setter Property="Margin" Value="0" />
+                        </Style>
+                    </ScrollViewer.Resources>
+                    <StackPanel Margin="32,28,32,28" MaxWidth="760" HorizontalAlignment="Left">
+                        <TextBlock Text="{l:T 'Settings'}" FontSize="30" FontWeight="ExtraBold" Margin="0,0,0,22" />
 
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <ComboBox DockPanel.Dock="Right" Width="260" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" AutomationProperties.Name="{l:T 'Language'}" Margin="12,0,0,0" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{l:T 'Language'}" FontWeight="Bold" />
-                                    <TextBlock Text="{l:T 'The launcher\'s language. Names from the game stay as the game writes them.'}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <ComboBox DockPanel.Dock="Right" Width="260" ItemsSource="{Binding PlayActions}" SelectedItem="{Binding PlayAction}" AutomationProperties.Name="{l:T 'When the game starts'}" Margin="12,0,0,0" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{l:T 'When the game starts'}" FontWeight="Bold" />
-                                    <TextBlock Text="{l:T 'What the launcher does after Play.'}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="{l:T 'Change'}" c:Ui.Icon="{StaticResource Icon.FolderOpen}" Click="OnChooseGameFolder" Margin="12,0,0,0" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{l:T 'Game folder'}" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding GameFolderText}" Style="{StaticResource Text.Hint}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="{l:T 'Open'}" c:Ui.Icon="{StaticResource Icon.Folder}" Click="OnOpenDataFolder" Margin="12,0,0,0" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{l:T 'Launcher data'}" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding DataFolder, Mode=OneTime}" Style="{StaticResource Text.Hint}" TextTrimming="CharacterEllipsis" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="{l:T 'Clear'}" c:Ui.Icon="{StaticResource Icon.Delete}" Click="OnClearCache" Margin="12,0,0,0" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{l:T 'Cache'}" FontWeight="Bold" />
-                                    <TextBlock Text="{l:T 'Copies of the game\'s tables, textures and pictures. Clearing them makes the launcher read the game again. Profiles and liveries stay.'}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="12,0,0,0">
-                                    <Button Content="{l:T 'Download'}" c:Ui.Icon="{StaticResource Icon.Add}" Click="OnDownloadOodle" Margin="0,0,8,0" />
-                                    <Button Content="{l:T 'Locate'}" c:Ui.Icon="{StaticResource Icon.FolderOpen}" Click="OnLocateOodle" />
-                                </StackPanel>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="Oodle (oo2core_9_win64.dll)" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding OodleText}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" Margin="0,0,0,10">
-                            <DockPanel>
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding VersionText}" Foreground="{StaticResource Brush.TextMuted}" VerticalAlignment="Center" />
-                                <TextBlock Text="{l:T 'Version'}" FontWeight="Bold" />
-                            </DockPanel>
-                        </Border>
-
-                        <!-- File check -->
-                        <Border Background="{StaticResource Brush.Card}" CornerRadius="14" Padding="16,14" DataContext="{Binding Database}">
+                        <TextBlock Text="{l:T 'GENERAL'}" Style="{StaticResource Text.Label}" Margin="4,0,0,8" />
+                        <Border Style="{StaticResource SettingGroup}">
                             <StackPanel>
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Right" Style="{StaticResource PrimaryButton}" Content="{l:T 'Check files'}" c:Ui.Icon="{StaticResource Icon.Search}"
-                                            Click="OnCheckFiles" Margin="12,0,0,0" IsEnabled="{Binding CanCheck}" />
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="{l:T 'Files'}" FontWeight="Bold" />
-                                        <TextBlock Text="{l:T 'Looks at the game paks, your mods and the launcher\'s pak without changing them.'}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </DockPanel>
-                                <ItemsControl ItemsSource="{Binding CheckResults}" Margin="0,8,0,0">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <DockPanel Margin="0,8,0,0">
-                                                <Ellipse x:Name="Dot" DockPanel.Dock="Left" Width="8" Height="8" Margin="2,6,10,0" VerticalAlignment="Top" Fill="{StaticResource Brush.Info}" />
-                                                <StackPanel>
-                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
-                                                </StackPanel>
-                                            </DockPanel>
-                                            <DataTemplate.Triggers>
-                                                <DataTrigger Binding="{Binding Level}" Value="Warning">
-                                                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Brush.Warning}" />
-                                                </DataTrigger>
-                                                <DataTrigger Binding="{Binding Level}" Value="Problem">
-                                                    <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Brush.Danger}" />
-                                                </DataTrigger>
-                                            </DataTemplate.Triggers>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Language'}" c:Ui.Icon="{StaticResource Icon.Globe}">
+                                    <ComboBox Width="240" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" AutomationProperties.Name="{l:T 'Language'}" />
+                                </HeaderedContentControl>
+                                <Border Style="{StaticResource SettingDivider}" />
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'When the game starts'}" c:Ui.Icon="{StaticResource Icon.Play}"
+                                                        AutomationProperties.HelpText="{l:T 'What the launcher does after Play.'}">
+                                    <ComboBox Width="240" ItemsSource="{Binding PlayActions}" SelectedItem="{Binding PlayAction}" AutomationProperties.Name="{l:T 'When the game starts'}" />
+                                </HeaderedContentControl>
                             </StackPanel>
                         </Border>
+
+                        <TextBlock Text="{l:T 'GAME'}" Style="{StaticResource Text.Label}" Margin="4,22,0,8" />
+                        <Border Style="{StaticResource SettingGroup}">
+                            <StackPanel>
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Game folder'}" c:Ui.Icon="{StaticResource Icon.FolderOpen}"
+                                                        AutomationProperties.HelpText="{Binding GameFolderText}">
+                                    <Button Content="{l:T 'Change'}" Click="OnChooseGameFolder" />
+                                </HeaderedContentControl>
+                                <Border Style="{StaticResource SettingDivider}" />
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="Oodle" c:Ui.Icon="{StaticResource Icon.Archive}"
+                                                        AutomationProperties.HelpText="{l:T 'Dakar Desert Rally compresses its files with Oodle (oo2core_9_win64.dll). The launcher needs it to read the cars, drivers and liveries in the Paddock. The game does not ship it on its own.'}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Border CornerRadius="9" Padding="10,4" Margin="0,0,10,0" VerticalAlignment="Center" Background="{StaticResource Brush.AccentSoft}">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="7" Height="7" Margin="0,0,7,0" VerticalAlignment="Center">
+                                                    <Ellipse.Style>
+                                                        <Style TargetType="Ellipse">
+                                                            <Setter Property="Fill" Value="{StaticResource Brush.Warning}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding OodleFound}" Value="True">
+                                                                    <Setter Property="Fill" Value="{StaticResource Brush.Info}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Ellipse.Style>
+                                                </Ellipse>
+                                                <TextBlock Text="{Binding OodleText}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Border>
+                                        <Button Style="{StaticResource PrimaryButton}" Content="{l:T 'Download'}" Click="OnDownloadOodle" Margin="0,0,8,0"
+                                                Visibility="{Binding OodleFound, Converter={StaticResource InverseBoolToVisibility}}" />
+                                        <Button Content="{l:T 'Locate'}" Click="OnLocateOodle" />
+                                    </StackPanel>
+                                </HeaderedContentControl>
+                                <Border Style="{StaticResource SettingDivider}" />
+                                <StackPanel DataContext="{Binding Database}">
+                                    <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Files'}" c:Ui.Icon="{StaticResource Icon.Search}"
+                                                            AutomationProperties.HelpText="{l:T 'Looks at the game paks, your mods and the launcher\'s pak without changing them.'}">
+                                        <Button Content="{l:T 'Check files'}" Click="OnCheckFiles" IsEnabled="{Binding CanCheck}" />
+                                    </HeaderedContentControl>
+                                    <ItemsControl ItemsSource="{Binding CheckResults}" Margin="70,0,18,6">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <DockPanel Margin="0,0,0,10">
+                                                    <Ellipse x:Name="Dot" DockPanel.Dock="Left" Width="8" Height="8" Margin="0,6,10,0" VerticalAlignment="Top" Fill="{StaticResource Brush.Info}" />
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Hint}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Brush.Warning}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Level}" Value="Problem">
+                                                        <Setter TargetName="Dot" Property="Fill" Value="{StaticResource Brush.Danger}" />
+                                                    </DataTrigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="{l:T 'LAUNCHER'}" Style="{StaticResource Text.Label}" Margin="4,22,0,8" />
+                        <Border Style="{StaticResource SettingGroup}">
+                            <StackPanel>
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Check for updates'}" c:Ui.Icon="{StaticResource Icon.Sync}"
+                                                        AutomationProperties.HelpText="{l:T 'At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.'}">
+                                    <CheckBox Style="{StaticResource Switch}" IsChecked="{Binding CheckForUpdates}" AutomationProperties.Name="{l:T 'Check for updates'}" />
+                                </HeaderedContentControl>
+                                <Border Style="{StaticResource SettingDivider}" />
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Launcher data'}" c:Ui.Icon="{StaticResource Icon.Folder}"
+                                                        AutomationProperties.HelpText="{Binding DataFolder, Mode=OneTime}">
+                                    <Button Content="{l:T 'Open'}" Click="OnOpenDataFolder" />
+                                </HeaderedContentControl>
+                                <Border Style="{StaticResource SettingDivider}" />
+                                <HeaderedContentControl Style="{StaticResource SettingRow}" Header="{l:T 'Cache'}" c:Ui.Icon="{StaticResource Icon.Delete}"
+                                                        AutomationProperties.HelpText="{l:T 'Copies of the game\'s tables, textures and pictures. Clearing them makes the launcher read the game again. Profiles and liveries stay.'}">
+                                    <Button Content="{l:T 'Clear'}" Click="OnClearCache" />
+                                </HeaderedContentControl>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource Text.Hint}" HorizontalAlignment="Center" Margin="0,22,0,0">
+                            <Run Text="Dalviiio DDR Launcher" /> <Run Text="{Binding VersionText, Mode=OneWay}" />
+                        </TextBlock>
                     </StackPanel>
                     </ScrollViewer>
 

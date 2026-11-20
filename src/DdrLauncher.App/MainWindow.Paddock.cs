@@ -143,9 +143,9 @@ public partial class MainWindow
         }
     }
 
-    internal bool Confirm(string title, string message, string action)
+    internal bool Confirm(string title, string message, string action, DialogKind kind = DialogKind.Warning)
     {
-        var dialog = new DialogWindow(title, DialogWindow.MessageText(message), DialogKind.Warning) { Owner = this };
+        var dialog = new DialogWindow(title, DialogWindow.MessageText(message), kind) { Owner = this };
         dialog.AddButton(T("Cancel"), false, isCancel: true);
         dialog.AddButton(action, true, primary: true);
         return dialog.ShowDialog() == true;
