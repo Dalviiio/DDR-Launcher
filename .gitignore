@@ -24,7 +24,28 @@ TestResults/
 *.ucas
 *.uasset
 *.uexp
+*.ubulk
+*.uptnl
+*.umap
+*.ushaderbytecode
 CLAUDE.md
 CLAUDE.local.md
 # Oodle library (RAD/Epic), copied in by hand for development
 oo2core_*.dll
+
+# Signing keys: the release key lives in the user profile, never here
+*.pem
+*.key
+
+# Temporary files the launcher writes next to its targets
+*.tmp
+*.download
+
+# Executables and signatures: the setup is built in publish/, nothing else belongs in the repo
+*.exe
+*.sig
+
+# Windows clutter and crash dumps
+Thumbs.db
+desktop.ini
+*.dmp
