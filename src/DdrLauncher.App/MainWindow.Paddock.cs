@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using DdrLauncher.App.Controls;
 using DdrLauncher.App.ViewModels;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App;
 
@@ -29,13 +30,13 @@ public partial class MainWindow
         var db = _vm.Database;
         var form = new Form();
         var name = form.Text("NAME");
-        var country = form.Pick("COUNTRY", db.Countries.ToList(), "Value", null);
+        var country = form.Pick(T("COUNTRY"), db.Countries.ToList(), "Value", null);
         form.Validate = () =>
-            string.IsNullOrWhiteSpace(name.Text) ? "Enter a name"
-            : country.SelectedItem is null ? "Choose a country"
+            string.IsNullOrWhiteSpace(name.Text) ? T("Enter a name")
+            : country.SelectedItem is null ? T("Choose a country")
             : null;
 
-        if (form.Show(this, "Add a driver", "Add"))
+        if (form.Show(this, T("Add a driver"), T("Add")))
         {
             await db.AddPilotAsync(name.Text, ((KeyValuePair<string, string>)country.SelectedItem!).Key);
         }
@@ -46,15 +47,15 @@ public partial class MainWindow
         var db = _vm.Database;
         var form = new Form();
         var editions = db.Editions.Where(e => !e.IsDefault).ToList();
-        var edition = form.Pick("EDITION", editions, "Name", editions.FirstOrDefault(e => e.Key == db.Edition) ?? editions.LastOrDefault(e => e.Caption == "DAKAR"));
-        var vehicle = form.Pick("VEHICLE", Array.Empty<VehicleItem>(), "DisplayName", null);
+        var edition = form.Pick(T("EDITION"), editions, "Name", editions.FirstOrDefault(e => e.Key == db.Edition) ?? editions.LastOrDefault(e => e.Caption == "DAKAR"));
+        var vehicle = form.Pick(T("VEHICLE"), Array.Empty<VehicleItem>(), "DisplayName", null);
         var skin = form.Pick("SKIN", Array.Empty<CrewItem>(), "SkinName", null, (DataTemplate)FindResource("SkinItem"));
         var top = form.Row(2);
         var name = form.Text("TEAM NAME", into: top);
         var number = form.Text("NUMBER", db.NextFreeNumber().ToString(CultureInfo.InvariantCulture), top);
-        var driver = form.Pick("DRIVER", db.PilotOptions, "Name", null);
-        var coDriver = form.Pick("CO-DRIVER", db.PilotOptions, "Name", null);
-        form.Hint("The team is added to the edition; no existing team changes. Skins come from teams of that edition that drive the same vehicle. Bikes and quads have no co-driver. Numbers from 790 up are free.");
+        var driver = form.Pick(T("DRIVER"), db.PilotOptions, "Name", null);
+        var coDriver = form.Pick(T("CO-DRIVER"), db.PilotOptions, "Name", null);
+        form.Hint(T("The team is added to the edition; no existing team changes. Skins come from teams of that edition that drive the same vehicle. Bikes and quads have no co-driver. Numbers from 790 up are free."));
 
         string? Table() => edition.SelectedItem is EditionChip e ? db.TableOf(e.Key) : null;
         void Vehicles() => vehicle.ItemsSource = Table() is { } t ? db.VehiclesWithSkins(t) : [];
@@ -68,15 +69,15 @@ public partial class MainWindow
         vehicle.SelectionChanged += (_, _) => Skins();
         Vehicles();
         form.Validate = () =>
-            edition.SelectedItem is null ? "Choose an edition"
-            : vehicle.SelectedItem is null ? "Choose a vehicle"
-            : skin.SelectedItem is null ? "Choose a skin"
-            : string.IsNullOrWhiteSpace(name.Text) ? "Enter a team name"
-            : Int(number.Text) is not (> 0 and < 10000) ? "Enter a number from 1 to 9999"
-            : driver.SelectedItem is null ? "Choose a driver"
+            edition.SelectedItem is null ? T("Choose an edition")
+            : vehicle.SelectedItem is null ? T("Choose a vehicle")
+            : skin.SelectedItem is null ? T("Choose a skin")
+            : string.IsNullOrWhiteSpace(name.Text) ? T("Enter a team name")
+            : Int(number.Text) is not (> 0 and < 10000) ? T("Enter a number from 1 to 9999")
+            : driver.SelectedItem is null ? T("Choose a driver")
             : null;
 
-        if (form.Show(this, "Add a team", "Add"))
+        if (form.Show(this, T("Add a team"), T("Add")))
         {
             await db.AddTeamAsync((CrewItem)skin.SelectedItem!, (VehicleItem)vehicle.SelectedItem!, Int(number.Text)!.Value, name.Text,
                 (PilotItem)driver.SelectedItem!, coDriver.SelectedItem as PilotItem);
@@ -85,7 +86,7 @@ public partial class MainWindow
 
     private async void OnDeleteVehicle(object sender, RoutedEventArgs e)
     {
-        if (_vm.Database.SelectedVehicle is { IsAdded: true } vehicle && Confirm($"Delete {vehicle.Name}?", "It is removed from the launcher now, and from the game at the next Apply.", "Delete"))
+        if (_vm.Database.SelectedVehicle is { IsAdded: true } vehicle && Confirm(T("Delete {0}?", vehicle.Name), T("It is removed from the launcher now, and from the game at the next Apply."), T("Delete")))
         {
             await _vm.Database.DeleteVehicleAsync(vehicle);
         }
@@ -93,7 +94,7 @@ public partial class MainWindow
 
     private async void OnDeletePilot(object sender, RoutedEventArgs e)
     {
-        if (_vm.Database.SelectedPilot is { IsAdded: true } pilot && Confirm($"Delete {pilot.Name}?", "They are removed from the launcher now, and from the game at the next Apply.", "Delete"))
+        if (_vm.Database.SelectedPilot is { IsAdded: true } pilot && Confirm(T("Delete {0}?", pilot.Name), T("They are removed from the launcher now, and from the game at the next Apply."), T("Delete")))
         {
             await _vm.Database.DeletePilotAsync(pilot);
         }
@@ -101,7 +102,7 @@ public partial class MainWindow
 
     private async void OnDeleteTeam(object sender, RoutedEventArgs e)
     {
-        if (_vm.Database.SelectedCrew is { IsAdded: true } crew && Confirm($"Delete {crew.Team.Name}?", "It is removed from the launcher now, and from the game at the next Apply.", "Delete"))
+        if (_vm.Database.SelectedCrew is { IsAdded: true } crew && Confirm(T("Delete {0}?", crew.Team.Name), T("It is removed from the launcher now, and from the game at the next Apply."), T("Delete")))
         {
             await _vm.Database.DeleteTeamAsync(crew);
         }
@@ -111,10 +112,10 @@ public partial class MainWindow
     {
         var db = _vm.Database;
         var form = new Form();
-        var name = form.Text("NAME", db.FreeProfileName(db.CanEdit ? db.ActiveProfile.Name : "My lineup"));
-        form.Hint(db.CanEdit ? $"Starts as a copy of {db.ActiveProfile.Name}, which stays as it is." : "Starts from the game as it ships.");
-        form.Validate = () => string.IsNullOrWhiteSpace(name.Text) ? "Enter a name" : null;
-        if (form.Show(this, "New profile", "Create"))
+        var name = form.Text(T("NAME"), db.FreeProfileName(db.CanEdit ? db.ActiveProfile.Name : T("My lineup")));
+        form.Hint(db.CanEdit ? T("Starts as a copy of {0}, which stays as it is.", db.ActiveProfile.Name) : T("Starts from the game as it ships."));
+        form.Validate = () => string.IsNullOrWhiteSpace(name.Text) ? T("Enter a name") : null;
+        if (form.Show(this, T("New profile"), T("Create")))
         {
             await db.NewProfileAsync(name.Text);
         }
@@ -125,8 +126,8 @@ public partial class MainWindow
         var db = _vm.Database;
         var form = new Form();
         var name = form.Text("NAME", db.ActiveProfile.Name);
-        form.Validate = () => string.IsNullOrWhiteSpace(name.Text) ? "Enter a name" : null;
-        if (form.Show(this, "Rename profile", "Rename"))
+        form.Validate = () => string.IsNullOrWhiteSpace(name.Text) ? T("Enter a name") : null;
+        if (form.Show(this, T("Rename profile"), T("Rename")))
         {
             db.RenameProfile(name.Text);
         }
@@ -134,7 +135,7 @@ public partial class MainWindow
 
     private async void OnDeleteProfile(object sender, RoutedEventArgs e)
     {
-        if (Confirm($"Delete {_vm.Database.ActiveProfile.Name}?", "Its changes are lost. What is in the game stays there until you apply another profile.", "Delete"))
+        if (Confirm(T("Delete {0}?", _vm.Database.ActiveProfile.Name), T("Its changes are lost. What is in the game stays there until you apply another profile."), T("Delete")))
         {
             await _vm.Database.DeleteProfileAsync();
         }
@@ -142,9 +143,9 @@ public partial class MainWindow
 
     private async void OnResetEverything(object sender, RoutedEventArgs e)
     {
-        if (Confirm("Back to the original game?",
-                "The launcher removes its pak from the game now and switches to Default. Your profiles stay.",
-                "Go back"))
+        if (Confirm(T("Back to the original game?"),
+                T("The launcher removes its pak from the game now and switches to Default. Your profiles stay."),
+                T("Go back")))
         {
             await _vm.Database.ResetEverythingAsync();
         }
@@ -153,7 +154,7 @@ public partial class MainWindow
     internal bool Confirm(string title, string message, string action)
     {
         var dialog = new DialogWindow(title, DialogWindow.MessageText(message), DialogKind.Warning) { Owner = this };
-        dialog.AddButton("Cancel", false, isCancel: true);
+        dialog.AddButton(T("Cancel"), false, isCancel: true);
         dialog.AddButton(action, true, primary: true);
         return dialog.ShowDialog() == true;
     }
@@ -211,7 +212,7 @@ public partial class MainWindow
         {
             _panel.Children.Add(_error);
             var dialog = new DialogWindow(title, _panel, width: 480) { Owner = owner };
-            dialog.AddButton("Cancel", false, isCancel: true);
+            dialog.AddButton(T("Cancel"), false, isCancel: true);
             _ok = dialog.AddButton(action, true, primary: true);
             Check();
             return dialog.ShowDialog() == true;

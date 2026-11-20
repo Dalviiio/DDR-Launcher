@@ -10,6 +10,7 @@ using DdrLauncher.Core.Data;
 using DdrLauncher.Core.Paks;
 using DdrLauncher.Core.Safety;
 using Microsoft.Win32;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App;
 
@@ -30,7 +31,7 @@ internal sealed class LiveryWindow
     private readonly PerspectiveCamera _camera = new() { FieldOfView = 40 };
     private readonly ListBox _list = new() { MinHeight = 160, MaxHeight = 260 };
     private readonly TextBlock _status = new() { Style = Style("Text.Hint"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 12, 0, 0) };
-    private readonly TextBlock _loading = new() { Text = "Loading the car...", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brush("Brush.TextMuted") };
+    private readonly TextBlock _loading = new() { Text = T("Loading the car..."), HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Foreground = Brush("Brush.TextMuted") };
     private readonly Button _import;
     private readonly Button _reset;
     private readonly Button _export;
@@ -53,7 +54,7 @@ internal sealed class LiveryWindow
         stage.Children.Add(_loading);
         stage.Children.Add(new TextBlock
         {
-            Text = "Drag to turn, scroll to zoom",
+            Text = T("Drag to turn, scroll to zoom"),
             Style = Style("Text.Hint"),
             Margin = new Thickness(14, 0, 0, 10),
             VerticalAlignment = VerticalAlignment.Bottom,
@@ -71,9 +72,9 @@ internal sealed class LiveryWindow
         text.SetValue(FrameworkElement.MarginProperty, new Thickness(14, 9, 14, 9));
         _list.ItemTemplate = new DataTemplate { VisualTree = text };
         _list.SelectionChanged += (_, _) => { _message = null; Refresh(); };
-        _export = new Button { Content = "Export", Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch, ToolTip = "Save every part's picture and wireframe in a folder, to paint them" };
-        _import = new Button { Content = "Import", Style = Style("PrimaryButton"), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch, ToolTip = "Put a painted picture on this part" };
-        _reset = new Button { Content = "Reset part", Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
+        _export = new Button { Content = T("Export"), Margin = new Thickness(0, 10, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch, ToolTip = T("Save every part's picture and wireframe in a folder, to paint them") };
+        _import = new Button { Content = T("Import"), Style = Style("PrimaryButton"), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch, ToolTip = T("Put a painted picture on this part") };
+        _reset = new Button { Content = T("Reset part"), Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Stretch };
         Ui.SetIcon(_export, (Geometry)Application.Current.FindResource("Icon.Folder"));
         Ui.SetIcon(_import, (Geometry)Application.Current.FindResource("Icon.Add"));
         Ui.SetIcon(_reset, (Geometry)Application.Current.FindResource("Icon.Undo"));
@@ -82,7 +83,7 @@ internal sealed class LiveryWindow
         _reset.Click += (_, _) => ResetPart();
 
         var side = new StackPanel { Width = 280, Margin = new Thickness(18, 0, 0, 0) };
-        side.Children.Add(new TextBlock { Text = "PARTS", Style = Style("Text.Label"), Margin = new Thickness(0, 0, 0, 6) });
+        side.Children.Add(new TextBlock { Text = T("PARTS"), Style = Style("Text.Label"), Margin = new Thickness(0, 0, 0, 6) });
         side.Children.Add(_list);
         side.Children.Add(_import);
         side.Children.Add(_reset);
@@ -94,9 +95,9 @@ internal sealed class LiveryWindow
         body.Children.Add(side);
         body.Children.Add(new Border { CornerRadius = new CornerRadius(16), ClipToBounds = true, Child = stage });
 
-        _window = new DialogWindow($"{crew.Team.Name} livery", body, width: 1180) { Owner = owner };
-        _window.AddButton("Close", null, isCancel: true);
-        _save = _window.AddButton("Save", true, primary: true);
+        _window = new DialogWindow(T("{0} livery", crew.Team.Name), body, width: 1180) { Owner = owner };
+        _window.AddButton(T("Close"), null, isCancel: true);
+        _save = _window.AddButton(T("Save"), true, primary: true);
         _save.IsEnabled = false;
         _save.Visibility = db.CanEdit ? Visibility.Visible : Visibility.Collapsed;
         _window.Loaded += async (_, _) => await LoadAsync();
@@ -120,7 +121,7 @@ internal sealed class LiveryWindow
         var parts = _crew.LiveryParts;
         if (parts.Count == 0)
         {
-            _loading.Text = "This team's livery is not in the game's data.";
+            _loading.Text = T("This team's livery is not in the game's data.");
             return;
         }
 
@@ -150,7 +151,7 @@ internal sealed class LiveryWindow
             _model = await _db.CarAsync(_crew.Vehicle.Model.Blueprint);
             if (_model is null)
             {
-                _loading.Text = "The 3D model of this car cannot be read. Export and Import still work.";
+                _loading.Text = T("The 3D model of this car cannot be read. Export and Import still work.");
                 return;
             }
 
@@ -159,7 +160,7 @@ internal sealed class LiveryWindow
         }
         catch (Exception e) when (e is IOException or InvalidDataException or UnauthorizedAccessException or OodleMissingException)
         {
-            _loading.Text = "The livery cannot be read: " + e.Message;
+            _loading.Text = T("The livery cannot be read: {0}", e.Message);
         }
 
         Refresh();
@@ -245,7 +246,7 @@ internal sealed class LiveryWindow
             return;
         }
 
-        var dialog = new OpenFileDialog { Title = $"Picture for {part.Label}", Filter = "Pictures (*.png, *.jpg)|*.png;*.jpg;*.jpeg" };
+        var dialog = new OpenFileDialog { Title = T("Picture for {0}", part.Label), Filter = T("Pictures") + " (*.png, *.jpg)|*.png;*.jpg;*.jpeg" };
         if (dialog.ShowDialog(_window) != true)
         {
             return;
@@ -265,7 +266,7 @@ internal sealed class LiveryWindow
         }
         catch (Exception e) when (e is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException)
         {
-            _message = "This picture cannot be read: " + e.Message;
+            _message = T("This picture cannot be read: {0}", e.Message);
             return;
         }
 
@@ -285,14 +286,14 @@ internal sealed class LiveryWindow
 
     private async Task ExportAsync()
     {
-        var dialog = new OpenFolderDialog { Title = "Folder for the livery pictures" };
+        var dialog = new OpenFolderDialog { Title = T("Folder for the livery pictures") };
         if (_parts.Count == 0 || dialog.ShowDialog(_window) != true)
         {
             return;
         }
 
         _export.IsEnabled = false;
-        _message = "Exporting...";
+        _message = T("Exporting...");
         Refresh();
         try
         {
@@ -317,11 +318,11 @@ internal sealed class LiveryWindow
                     }
                 }
             });
-            _message = $"Exported to {folder}. Paint over a part's picture (its wireframe shows where each panel is), then Import it here.";
+            _message = T("Exported to {0}. Paint over a part's picture (its wireframe shows where each panel is), then Import it here.", folder);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException)
         {
-            _message = "Export failed: " + e.Message;
+            _message = T("Export failed: {0}", e.Message);
         }
         finally
         {
@@ -338,8 +339,8 @@ internal sealed class LiveryWindow
         _reset.IsEnabled = Selected?.Image is not null;
         _save.IsEnabled = _changed;
         _status.Text = _message
-            ?? (!_db.CanEdit ? "Default is the game as it ships. To paint this livery, make a profile. Export works on Default too."
-                : Selected is { } part ? $"{part.Label} takes {part.Width} x {part.Height} pictures. Other sizes are resized." : "");
+            ?? (!_db.CanEdit ? T("Default is the game as it ships. To paint this livery, make a profile. Export works on Default too.")
+                : Selected is { } part ? T("{0} takes {1} x {2} pictures. Other sizes are resized.", part.Label, part.Width, part.Height) : "");
     }
 
     // "M_Wheels_FL", "M_SpareWheel_L"... -> "Wheels, SpareWheel"
@@ -383,6 +384,6 @@ internal sealed class LiveryWindow
 
         public DiffuseMaterial Material { get; }
 
-        public string Text => Image is null ? Label : Label + "  (painted)";
+        public string Text => Image is null ? Label : Label + "  " + T("(painted)");
     }
 }

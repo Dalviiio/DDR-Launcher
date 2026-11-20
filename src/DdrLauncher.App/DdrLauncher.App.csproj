@@ -16,6 +16,7 @@
     <Resource Include="Fonts\*.ttf" />
     <Resource Include="Assets\DalviiioDDRLauncher.ico" />
     <Resource Include="Assets\logo-ddr.png" />
+    <Resource Include="Localization\*.json" />
     <None Include="Fonts\OFL.txt" Link="Licenses\NunitoSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

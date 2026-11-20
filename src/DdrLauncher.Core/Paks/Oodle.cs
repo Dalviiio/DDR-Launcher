@@ -7,6 +7,9 @@ public sealed class Oodle : IDisposable
 {
     public const string LibraryName = "oo2core_9_win64.dll";
 
+    /// <summary>SHA-256 of the library <see cref="DownloadAsync"/> gets (OodleUE's build, the one FModel uses). Any other file is refused.</summary>
+    public const string DownloadSha256 = "DAC9171FF33D35EBBB93A978B075EB353675771117614689F989B8D4CD095654";
+
     private readonly IntPtr _library;
     private readonly DecompressFn _decompress;
 
@@ -19,6 +22,33 @@ public sealed class Oodle : IDisposable
     {
         _library = NativeLibrary.Load(path);
         _decompress = Marshal.GetDelegateForFunctionPointer<DecompressFn>(NativeLibrary.GetExport(_library, "OodleLZ_Decompress"));
+    }
+
+    /// <summary>
+    /// Downloads the library into <paramref name="folder"/> from OodleUE on GitHub. The file is kept only when its SHA-256 is
+    /// <see cref="DownloadSha256"/>: native code from the internet runs only if it is exactly the file that was checked.
+    /// </summary>
+    /// <returns>False when the download failed or gave another file.</returns>
+    public static async Task<bool> DownloadAsync(string folder)
+    {
+        Directory.CreateDirectory(folder);
+        var temp = Path.Combine(folder, LibraryName + ".download");
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+            if (!await CUE4Parse.Compression.OodleHelper.DownloadOodleDllFromOodleUEAsync(http, temp)
+                || !File.Exists(temp) || !Safety.FileHasher.HashEquals(Safety.FileHasher.Sha256(temp), DownloadSha256))
+            {
+                return false;
+            }
+
+            File.Move(temp, Path.Combine(folder, LibraryName), overwrite: true);
+            return true;
+        }
+        finally
+        {
+            File.Delete(temp);
+        }
     }
 
     /// <summary>Loads the first oo2core library found in <paramref name="folders"/>; null when there is none.</summary>

@@ -57,6 +57,15 @@ public static class PictureCache
         return bitmap;
     }
 
+    /// <summary>Forgets the failed list after the cache folder was deleted.</summary>
+    public static void Clear()
+    {
+        lock (FailedLock)
+        {
+            _failed = null;
+        }
+    }
+
     public static bool Failed(string asset)
     {
         lock (FailedLock)

@@ -10,6 +10,7 @@ using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Data;
 using DdrLauncher.Core.Game;
 using DdrLauncher.Core.Paks;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App.ViewModels;
 
@@ -105,7 +106,7 @@ public sealed partial class DatabaseViewModel : ObservableObject
     public bool IsDrivers => Tab == "Drivers";
 
     /// <summary>The Add button's label on the open tab. Vehicles are not added by hand: they come with car mods.</summary>
-    public string AddText => IsDrivers ? "Add driver" : "Add team";
+    public string AddText => T(IsDrivers ? "Add driver" : "Add team");
 
     public string Search
     {
@@ -164,12 +165,71 @@ public sealed partial class DatabaseViewModel : ObservableObject
         await ReloadAsync();
     }
 
+    /// <summary>True when the Oodle library is next to the launcher or in its data folder.</summary>
+    public static bool HasOodle => OodleFolders.Any(f => File.Exists(Path.Combine(f, Oodle.LibraryName)));
+
+    /// <summary>Downloads the Oodle library into the data folder (only the known file is kept), then reads the game.</summary>
+    public async Task DownloadOodleAsync(GameInstall? game)
+    {
+        Report(T("Downloading {0}...", Oodle.LibraryName), false);
+        bool done;
+        try
+        {
+            done = await Oodle.DownloadAsync(Settings.DataFolder);
+        }
+        catch (Exception e) when (e is System.Net.Http.HttpRequestException or TaskCanceledException or IOException or UnauthorizedAccessException)
+        {
+            done = false;
+        }
+
+        if (!done)
+        {
+            Report(T("The download did not work. Use Locate to pick the file yourself."), true);
+            return;
+        }
+
+        Report(T("{0} downloaded", Oodle.LibraryName), false);
+        Raise(nameof(HasOodle));
+        await LoadAsync(game);
+    }
+
+    /// <summary>Deletes the copies of the game's files and pictures the launcher keeps, then reads the game again. Liveries and profiles stay.</summary>
+    public async Task ClearCacheAsync()
+    {
+        try
+        {
+            var cache = Path.Combine(Settings.DataFolder, "Cache");
+            if (Directory.Exists(cache))
+            {
+                Directory.Delete(cache, recursive: true);
+            }
+
+            PictureCache.Clear();
+            _pictures.Clear();
+            Report(T("Cache cleared"), false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Report(e.Message, true);
+            return;
+        }
+
+        await ReloadAsync();
+    }
+
+    /// <summary>Shows every text again in the language now in use.</summary>
+    public async Task RetranslateAsync()
+    {
+        Raise(null);
+        await ReloadAsync();
+    }
+
     /// <summary>Copies the Oodle library the user picked into the launcher's data folder, where it is looked for.</summary>
     public async Task UseOodleAsync(string path, GameInstall? game)
     {
         if (!string.Equals(Path.GetFileName(path), Oodle.LibraryName, StringComparison.OrdinalIgnoreCase))
         {
-            Error = $"Choose {Oodle.LibraryName}";
+            Error = T("Choose {0}", Oodle.LibraryName);
             return;
         }
 
@@ -199,7 +259,7 @@ public sealed partial class DatabaseViewModel : ObservableObject
         {
             // Any failure reading the game stays on this page instead of closing the launcher.
             NeedsOodle = e is OodleMissingException or DllNotFoundException or EntryPointNotFoundException or BadImageFormatException;
-            Error = NeedsOodle ? $"{Oodle.LibraryName} missing" : e.Message;
+            Error = NeedsOodle ? T("{0} missing", Oodle.LibraryName) : e.Message;
         }
         finally
         {
@@ -344,16 +404,14 @@ public sealed partial class DatabaseViewModel : ObservableObject
         catch (Exception e)
         {
             // Pictures are a comfort: the lists work without them.
-            Report($"Pictures not loaded: {e.Message}", true);
+            Report(T("Pictures not loaded: {0}", e.Message), true);
         }
     }
 
     /// <summary>"Dakar22" -> "Dakar 22"; other editions keep their name.</summary>
     internal static string EditionName(string edition) => DakarEdition().Replace(edition, "Dakar $1");
 
-    internal static string RoleText(CrewRole role) => role == CrewRole.CoDriver ? "Co-driver" : role.ToString();
-
-    internal static string Count(int count, string noun) => count == 1 ? $"1 {noun}" : $"{count} {noun}s";
+    internal static string RoleText(CrewRole role) => T(role == CrewRole.CoDriver ? "Co-driver" : role.ToString());
 
     private static bool Matches(string search, params string[] fields) =>
         string.IsNullOrWhiteSpace(search) || fields.Any(f => f.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase));
@@ -389,9 +447,9 @@ public sealed record EditionChip(string Key)
 {
     public bool IsDefault => Key == "All";
 
-    public string Caption => IsDefault ? "EDITIONS" : DatabaseViewModel.DakarEdition().IsMatch(Key) ? "DAKAR" : "EDITION";
+    public string Caption => T(IsDefault ? "EDITIONS" : DatabaseViewModel.DakarEdition().IsMatch(Key) ? "DAKAR" : "EDITION");
 
-    public string Label => IsDefault ? "ALL" : DatabaseViewModel.DakarEdition().Match(Key) is { Success: true } m ? m.Groups[1].Value : Key;
+    public string Label => IsDefault ? T("ALL") : DatabaseViewModel.DakarEdition().Match(Key) is { Success: true } m ? m.Groups[1].Value : Key;
 
     /// <summary>"Dakar 22", "Classics".</summary>
     public string Name => DatabaseViewModel.EditionName(Key);
@@ -428,14 +486,14 @@ public sealed class VehicleItem(Vehicle model, IReadOnlyList<TeamLine> teams, bo
 
     public string Class => Model.Class;
 
-    public string ClassText => Model.Class == "Ssv" ? "SSV" : Model.Class;
+    public string ClassText => T(Model.Class == "Ssv" ? "SSV" : Model.Class);
 
     public string PriceText => Model.Price.ToString("N0", CultureInfo.InvariantCulture);
 
     public string MaxSpeedText => Model.MaxSpeed.ToString("0", CultureInfo.InvariantCulture);
 
     public IReadOnlyList<Stat> Stats { get; } =
-        [new("Speed", model.Speed), new("Acceleration", model.Acceleration), new("Handling", model.Handling), new("Strength", model.Strength)];
+        [new(T("Speed"), model.Speed), new(T("Acceleration"), model.Acceleration), new(T("Handling"), model.Handling), new(T("Strength"), model.Strength)];
 
     public IReadOnlyList<TeamLine> Teams { get; } = teams;
 
@@ -497,5 +555,5 @@ public sealed class PilotItem(Pilot model, IReadOnlyList<TeamLine> teams, bool i
     /// <summary>"Spain · Co-driver", or just the country when the driver is in no team.</summary>
     public string Subtitle { get; } = string.Join(" · ", [model.Country, .. teams.Select(t => t.Role).OfType<CrewRole>().Distinct().Order().Select(DatabaseViewModel.RoleText)]);
 
-    public string TeamsText => DatabaseViewModel.Count(Teams.Count, "team");
+    public string TeamsText => Count(Teams.Count, "{0} team", "{0} teams");
 }

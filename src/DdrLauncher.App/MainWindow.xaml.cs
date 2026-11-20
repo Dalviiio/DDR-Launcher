@@ -4,6 +4,7 @@ using System.Windows;
 using DdrLauncher.App.Controls;
 using DdrLauncher.App.ViewModels;
 using Microsoft.Win32;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App;
 
@@ -20,7 +21,7 @@ public partial class MainWindow : Window
         {
             var maximized = WindowState == WindowState.Maximized;
             Ui.SetIcon(MaximizeButton, (System.Windows.Media.Geometry)FindResource(maximized ? "Icon.RestoreWindow" : "Icon.Maximize"));
-            MaximizeButton.ToolTip = maximized ? "Restore" : "Maximize";
+            MaximizeButton.ToolTip = T(maximized ? "Restore" : "Maximize");
 
             // A maximized borderless window overflows the screen by its resize border.
             Root.Margin = maximized ? new Thickness(7) : new Thickness(0);
@@ -32,7 +33,7 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = "Import mods",
+            Title = T("Import mods"),
             Filter = "Mods (*.pak, *.zip, *.rar, *.7z)|*.pak;*.zip;*.rar;*.7z",
             Multiselect = true,
         };
@@ -44,7 +45,7 @@ public partial class MainWindow : Window
 
     private async void OnImportFolder(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "Import a mod folder" };
+        var dialog = new OpenFolderDialog { Title = T("Import a mod folder") };
         if (dialog.ShowDialog(this) == true)
         {
             await _vm.ImportAsync([dialog.FolderName]);
@@ -58,7 +59,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (Confirm("Remove this mod?", $"'{mod.Name}' will be taken out of the game and deleted from your library.", "Remove"))
+        if (Confirm(T("Remove this mod?"), T("'{0}' will be taken out of the game and deleted from your library.", mod.Name), T("Remove")))
         {
             await _vm.RemoveAsync(mod);
         }
@@ -66,7 +67,7 @@ public partial class MainWindow : Window
 
     private void OnChooseGameFolder(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFolderDialog { Title = "Choose the Dakar Desert Rally folder" };
+        var dialog = new OpenFolderDialog { Title = T("Choose the Dakar Desert Rally folder") };
         if (dialog.ShowDialog(this) == true)
         {
             _vm.TrySetGameFolder(dialog.FolderName);
@@ -89,7 +90,16 @@ public partial class MainWindow : Window
     private void OnPlay(object sender, RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo($"steam://rungameid/{Core.Game.GameInstall.SteamAppId}") { UseShellExecute = true });
-        _vm.Report("Starting...");
+        _vm.Report(T("Starting..."));
+        switch (_vm.PlayAction.Key)
+        {
+            case "Minimize":
+                WindowState = WindowState.Minimized;
+                break;
+            case "Close":
+                Close();
+                break;
+        }
     }
 
     private void OnDragOver(object sender, DragEventArgs e)
@@ -107,7 +117,7 @@ public partial class MainWindow : Window
     }
 
     private void OnFilter(object sender, RoutedEventArgs e) =>
-        _vm.Filter = (string)((System.Windows.Controls.RadioButton)sender).Content;
+        _vm.Filter = (string)((System.Windows.Controls.RadioButton)sender).CommandParameter;
 
 
     private void OnCloseCrew(object sender, RoutedEventArgs e) => _vm.Database.SelectedCrew = null;
@@ -146,14 +156,28 @@ public partial class MainWindow : Window
     {
         var dialog = new OpenFileDialog
         {
-            Title = $"Locate {Core.Paks.Oodle.LibraryName}",
+            Title = T("Locate {0}", Core.Paks.Oodle.LibraryName),
             Filter = $"Oodle ({Core.Paks.Oodle.LibraryName})|{Core.Paks.Oodle.LibraryName}",
         };
         if (dialog.ShowDialog(this) == true)
         {
             await _vm.Database.UseOodleAsync(dialog.FileName, _vm.Game);
+            _vm.RaiseOodle();
         }
     }
+
+    private async void OnDownloadOodle(object sender, RoutedEventArgs e)
+    {
+        if (Confirm(T("Download {0}?", Core.Paks.Oodle.LibraryName),
+                T("The game's files are compressed with Oodle, and the game does not ship this file on its own. The launcher downloads it from OodleUE on GitHub (the build FModel uses) and keeps it only if it is exactly the file that was checked."),
+                T("Download")))
+        {
+            await _vm.Database.DownloadOodleAsync(_vm.Game);
+            _vm.RaiseOodle();
+        }
+    }
+
+    private async void OnClearCache(object sender, RoutedEventArgs e) => await _vm.Database.ClearCacheAsync();
 
     private async void OnCheckFiles(object sender, RoutedEventArgs e) => await _vm.Database.CheckFilesAsync();
 

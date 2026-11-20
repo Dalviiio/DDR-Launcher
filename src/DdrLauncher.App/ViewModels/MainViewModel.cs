@@ -2,10 +2,12 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Windows.Data;
+using DdrLauncher.App.Localization;
 using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Game;
 using DdrLauncher.Core.Mods;
 using DdrLauncher.Core.Safety;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App.ViewModels;
 
@@ -16,7 +18,7 @@ public sealed class MainViewModel : ObservableObject
     private GameInstall? _game;
     private ModItemViewModel? _selectedMod;
     private bool _isBusy;
-    private string _status = "Ready";
+    private string _status = T("Ready");
     private bool _statusIsError;
     private string _filter = "All";
 
@@ -71,11 +73,54 @@ public sealed class MainViewModel : ObservableObject
 
     public bool HasGame => _game is not null;
 
-    public string GameFolderText => _game?.Folder ?? "Not found";
+    public string GameFolderText => _game?.Folder ?? T("Not found");
 
     public string DataFolder => Settings.DataFolder;
 
     public string VersionText { get; } = "v" + typeof(MainViewModel).Assembly.GetName().Version!.ToString(3);
+
+    public IReadOnlyList<Language> Languages => Translator.Languages;
+
+    /// <summary>The launcher's language; every text on screen follows at once.</summary>
+    public Language Language
+    {
+        get => Translator.Instance.Current;
+        set
+        {
+            if (value is null || value == Translator.Instance.Current)
+            {
+                return;
+            }
+
+            Translator.Instance.Use(value);
+            _settings.Language = value.Code;
+            _settings.Save();
+            _status = T("Ready");
+            Raise(null);
+            _ = Database.RetranslateAsync();
+        }
+    }
+
+    /// <summary>What Play does with the launcher once the game starts.</summary>
+    public IReadOnlyList<Choice> PlayActions =>
+        [new("Stay", T("Keep the launcher open")), new("Minimize", T("Minimize the launcher")), new("Close", T("Close the launcher"))];
+
+    public Choice PlayAction
+    {
+        get => PlayActions.FirstOrDefault(a => a.Key == _settings.PlayAction) ?? PlayActions[0];
+        set
+        {
+            if (value is not null && value.Key != _settings.PlayAction)
+            {
+                _settings.PlayAction = value.Key;
+                _settings.Save();
+            }
+        }
+    }
+
+    public string OodleText => DatabaseViewModel.HasOodle ? T("Found") : T("Missing: the Paddock needs it to read the game");
+
+    public void RaiseOodle() => Raise(nameof(OodleText));
 
     /// <summary>The game's cover from Steam's own cache, shown in the game bar; nothing is copied.</summary>
     public string? CoverImage { get; } = SteamImage("library_600x900.jpg");
@@ -83,7 +128,7 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>The game's wide artwork from Steam's cache, behind the page title.</summary>
     public string? HeroImage { get; } = SteamImage("library_hero.jpg");
 
-    public string Summary => Mods.Count == 0 ? "Empty" : DatabaseViewModel.Count(Mods.Count, "mod");
+    public string Summary => Mods.Count == 0 ? T("Empty") : Count(Mods.Count, "{0} mod", "{0} mods");
 
     public bool HasMods => Mods.Count > 0;
 
@@ -119,7 +164,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!GameInstall.IsValid(folder))
         {
-            Report("Not a Dakar Desert Rally folder", error: true);
+            Report(T("Not a Dakar Desert Rally folder"), error: true);
             return false;
         }
 
@@ -128,7 +173,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.Save();
         Raise(nameof(HasGame));
         Raise(nameof(GameFolderText));
-        Report("Game folder set");
+        Report(T("Game folder set"));
         _ = Database.LoadAsync(_game);
         return true;
     }
@@ -162,11 +207,11 @@ public sealed class MainViewModel : ObservableObject
 
         if (errors.Count > 0)
         {
-            Report($"Not added: {string.Join("; ", errors)}", error: true);
+            Report(T("Not added: {0}", string.Join("; ", errors)), error: true);
         }
         else if (added.Count > 0)
         {
-            Report(added.Count == 1 ? $"{added[0].Name} added" : $"{added.Count} mods added");
+            Report(added.Count == 1 ? T("{0} added", added[0].Name) : T("{0} mods added", added.Count));
         }
     }
 
@@ -174,7 +219,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (_game is null)
         {
-            Report("Set the game folder", error: true);
+            Report(T("Set the game folder"), error: true);
             return;
         }
 
@@ -203,7 +248,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (kept.Count > 0)
         {
-            Report($"Kept because they changed since they were added: {string.Join(", ", kept)}", error: true);
+            Report(T("Kept because they changed since they were added: {0}", string.Join(", ", kept)), error: true);
         }
         else if (!failed)
         {
@@ -238,7 +283,7 @@ public sealed class MainViewModel : ObservableObject
 
         Mods.Remove(item);
         Report(kept.Count > 0
-            ? $"{item.Name} removed. Kept because they changed since they were added: {string.Join(", ", kept)}"
+            ? T("{0} removed. Kept because they changed since they were added: {1}", item.Name, string.Join(", ", kept))
             : $"{item.Name} removed", error: kept.Count > 0);
     }
 
@@ -285,4 +330,10 @@ public sealed class MainViewModel : ObservableObject
     }
 
     private static string Reason(Exception e) => e is ImportRejectedException r ? r.Reason : e.Message;
+}
+
+/// <summary>An option in a settings list: its stored key and its name on screen.</summary>
+public sealed record Choice(string Key, string Name)
+{
+    public override string ToString() => Name;
 }

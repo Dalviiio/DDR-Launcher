@@ -12,7 +12,11 @@ public enum CheckLevel
 }
 
 /// <summary>One line of the file check: what was looked at, how it went, and why.</summary>
-public sealed record CheckResult(CheckLevel Level, string Title, string Detail);
+/// <param name="Text">The explanation in English, with <paramref name="Values"/> in "{0}" places, so the launcher can translate it.</param>
+public sealed record CheckResult(CheckLevel Level, string Title, string Text, params object[] Values)
+{
+    public string Detail => string.Format(System.Globalization.CultureInfo.InvariantCulture, Text, Values);
+}
 
 /// <summary>
 /// Looks at the files the game loads: its paks, the mods in ~mods (readable, what they replace, which ones clash)
@@ -46,8 +50,8 @@ public static class FileCheck
         }
 
         results.Add(broken.Count == 0
-            ? new(CheckLevel.Ok, "Game files", $"{gamePaks.Count} game paks read fine.")
-            : new(CheckLevel.Problem, "Game files", $"Cannot be read: {string.Join(", ", broken)}. Verify the game files in Steam."));
+            ? new(CheckLevel.Ok, "Game files", "{0} game paks read fine.", gamePaks.Count)
+            : new(CheckLevel.Problem, "Game files", "Cannot be read: {0}. Verify the game files in Steam.", string.Join(", ", broken)));
 
         // Mods, in the order the game loads them
         var ours = Path.Combine(game.ModsFolder, Lineup.PakName);
@@ -72,11 +76,15 @@ public static class FileCheck
 
             if (!path.Equals(ours, StringComparison.OrdinalIgnoreCase))
             {
-                var replaced = tables.Where(gameFiles.Contains).Select(Path.GetFileNameWithoutExtension).ToList();
-                var added = tables.Count(t => !gameFiles.Contains(t));
-                results.Add(new(CheckLevel.Ok, name, replaced.Count == 0 && added == 0
-                    ? "Reads fine and changes no game table."
-                    : $"Reads fine. It replaces {(replaced.Count == 0 ? "no game table" : string.Join(", ", replaced))}{(added > 0 ? $"; adds {added} table{(added == 1 ? "" : "s")}" : "")}."));
+                var replaced = string.Join(", ", tables.Where(gameFiles.Contains).Select(Path.GetFileNameWithoutExtension));
+                var added = string.Join(", ", tables.Where(t => !gameFiles.Contains(t)).Select(Path.GetFileNameWithoutExtension));
+                results.Add((replaced, added) switch
+                {
+                    ("", "") => new(CheckLevel.Ok, name, "Reads fine and changes no game table."),
+                    (_, "") => new(CheckLevel.Ok, name, "Reads fine. It replaces {0}.", replaced),
+                    ("", _) => new(CheckLevel.Ok, name, "Reads fine. It adds {0}.", added),
+                    _ => new(CheckLevel.Ok, name, "Reads fine. It replaces {0} and adds {1}.", replaced, added),
+                });
             }
         }
 
@@ -88,7 +96,8 @@ public static class FileCheck
             if (launcherFirst || !by.Contains(Lineup.PakName, StringComparer.OrdinalIgnoreCase))
             {
                 results.Add(new(CheckLevel.Warning, Path.GetFileNameWithoutExtension(table),
-                    $"Replaced by {string.Join(", ", by)}. Only {last} counts in the game{(launcherFirst ? ", so the launcher's changes to it are lost" : "")}."));
+                    launcherFirst ? "Replaced by {0}. Only {1} counts in the game, so the launcher's changes to it are lost." : "Replaced by {0}. Only {1} counts in the game.",
+                    string.Join(", ", by), last));
             }
         }
 
@@ -98,7 +107,7 @@ public static class FileCheck
         {
             (false, null) => new(CheckLevel.Ok, "Launcher changes", "No launcher pak in ~mods. The game runs with your other mods only."),
             (false, not null) => new(CheckLevel.Warning, "Launcher changes", "The launcher's pak is gone from ~mods. Apply puts it back."),
-            (true, null) => new(CheckLevel.Warning, "Launcher changes", $"{Lineup.PakName} is in ~mods but the launcher did not place it, so it will not touch it."),
+            (true, null) => new(CheckLevel.Warning, "Launcher changes", "{0} is in ~mods but the launcher did not place it, so it will not touch it.", Lineup.PakName),
             _ => FileHasher.HashEquals(FileHasher.Sha256(ours), placedSha256)
                 ? new(CheckLevel.Ok, "Launcher changes", "In ~mods and unchanged since the last Apply.")
                 : new(CheckLevel.Problem, "Launcher changes", "The launcher's pak was changed after it was applied. Apply again to rebuild it."),

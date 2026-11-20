@@ -8,6 +8,7 @@ using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Data;
 using DdrLauncher.Core.Game;
 using DdrLauncher.Core.Paks;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App.ViewModels;
 
@@ -57,7 +58,7 @@ public sealed partial class DatabaseViewModel
     public IReadOnlyList<KeyValuePair<string, string>> Countries => _countries;
 
     /// <summary>Default first, then the user's profiles.</summary>
-    public IReadOnlyList<ProfileItem> Profiles => [new ProfileItem(null, "Default"), .. _store.Profiles.Select(p => new ProfileItem(p.Id, p.Name))];
+    public IReadOnlyList<ProfileItem> Profiles => [new ProfileItem(null, T("Default")), .. _store.Profiles.Select(p => new ProfileItem(p.Id, p.Name))];
 
     /// <summary>The profile in use; choosing another one shows its line-up (Apply puts it in the game).</summary>
     public ProfileItem ActiveProfile
@@ -81,7 +82,7 @@ public sealed partial class DatabaseViewModel
     public int EditedCount => _store.Plan is var plan ? plan.Changes.Count + plan.Vehicles.Count + plan.Pilots.Count + plan.Teams.Count + plan.Paints.Count : 0;
 
     /// <summary>"· 3 changes" after the status; nothing on Default, which has none.</summary>
-    public string ChangesText => CanEdit ? "· " + Count(EditedCount, "change") : "";
+    public string ChangesText => CanEdit ? "· " + Count(EditedCount, "{0} change", "{0} changes") : "";
 
     /// <summary>True while the launcher's pak is in the game.</summary>
     public bool HasEdits => _store.PlacedSha256 is not null;
@@ -91,21 +92,21 @@ public sealed partial class DatabaseViewModel
 
     public string PendingText => (IsPending, CanEdit) switch
     {
-        (true, true) => "Not in the game yet",
-        (true, false) => "Apply to put the original game back",
-        (false, true) => "In the game",
-        _ => "Original game",
+        (true, true) => T("Not in the game yet"),
+        (true, false) => T("Apply to put the original game back"),
+        (false, true) => T("In the game"),
+        _ => T("Original game"),
     };
 
     public bool IsApplying { get => _isApplying; private set { if (Set(ref _isApplying, value)) { Raise(nameof(CanApply)); } } }
 
     public bool CanApply => IsPending && !IsApplying;
 
-    private IReadOnlyList<CheckResult> _checkResults = [];
+    private IReadOnlyList<CheckLine> _checkResults = [];
     private bool _isChecking;
 
     /// <summary>The last file check, problems first.</summary>
-    public IReadOnlyList<CheckResult> CheckResults { get => _checkResults; private set => Set(ref _checkResults, value); }
+    public IReadOnlyList<CheckLine> CheckResults { get => _checkResults; private set => Set(ref _checkResults, value); }
 
     public bool IsChecking { get => _isChecking; private set { if (Set(ref _isChecking, value)) { Raise(nameof(CanCheck)); } } }
 
@@ -124,9 +125,10 @@ public sealed partial class DatabaseViewModel
         {
             var placed = _store.PlacedSha256;
             CheckResults = (await Task.Run(() => FileCheck.Run(game, OodleFolders, placed)))
+                .Select(r => new CheckLine(r.Level, T(r.Title), T(r.Text, r.Values)))
                 .OrderByDescending(r => r.Level).ToList();
             var problems = CheckResults.Count(r => r.Level != CheckLevel.Ok);
-            Report(problems == 0 ? "Files checked: no problem found" : $"Files checked: {Count(problems, "point")} to look at", problems > 0);
+            Report(problems == 0 ? T("Files checked: no problem found") : Count(problems, "Files checked: {0} point to look at", "Files checked: {0} points to look at"), problems > 0);
         }
         finally
         {
@@ -201,7 +203,7 @@ public sealed partial class DatabaseViewModel
             _store.PlacedSha256 = hash;
             _store.AppliedBuild = Lineup.BuildVersion;
             _store.Save();
-            Report(plan.IsEmpty ? "Original game back" : $"{ActiveProfile.Name} is in the game", false);
+            Report(plan.IsEmpty ? T("Original game back") : T("{0} is in the game", ActiveProfile.Name), false);
         }
         catch (Exception e) when (e is IOException or InvalidOperationException or InvalidDataException or UnauthorizedAccessException or FormatException)
         {
@@ -230,7 +232,7 @@ public sealed partial class DatabaseViewModel
             _store.Applied = null;
             _store.PlacedSha256 = null;
             _store.ActiveProfile = null;
-            Report("Original game back", false);
+            Report(T("Original game back"), false);
         }
         catch (Exception e) when (e is IOException or InvalidOperationException or UnauthorizedAccessException)
         {
@@ -301,7 +303,7 @@ public sealed partial class DatabaseViewModel
 
         if (_crews.Any(c => c.Team.Number == number))
         {
-            Report($"Number {number} is taken", true);
+            Report(T("Number {0} is taken", number), true);
             return;
         }
 
@@ -316,7 +318,7 @@ public sealed partial class DatabaseViewModel
     {
         if (_crews.Any(c => c.Vehicle == vehicle || c.OriginalVehicle == vehicle))
         {
-            Report($"{vehicle.Name} is used by a team", true);
+            Report(T("{0} is used by a team", vehicle.Name), true);
             return Task.CompletedTask;
         }
 
@@ -329,7 +331,7 @@ public sealed partial class DatabaseViewModel
     {
         if (_crews.Any(c => c.Driver == pilot || c.CoDriver == pilot || c.OriginalDriver == pilot || c.OriginalCoDriver == pilot))
         {
-            Report($"{pilot.Name} is in a team", true);
+            Report(T("{0} is in a team", pilot.Name), true);
             return Task.CompletedTask;
         }
 
@@ -688,3 +690,6 @@ public sealed class CrewItem : ObservableObject
     private PilotItem? Member(CrewRole role) =>
         Team.Members.FirstOrDefault(m => m.Role == role) is { } m && _pilots.TryGetValue(m.PilotId, out var p) ? p : null;
 }
+
+/// <summary>A file check line, translated.</summary>
+public sealed record CheckLine(CheckLevel Level, string Title, string Detail);

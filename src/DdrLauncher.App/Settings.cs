@@ -12,6 +12,12 @@ public sealed class Settings
 
     public string? GameFolder { get; set; }
 
+    /// <summary>The launcher's language code; null follows Windows.</summary>
+    public string? Language { get; set; }
+
+    /// <summary>What the launcher does once Play started the game: "Stay", "Minimize" or "Close".</summary>
+    public string PlayAction { get; set; } = "Stay";
+
     public static Settings Load() => JsonFile.Load<Settings>(FilePath);
 
     public void Save() => JsonFile.Save(FilePath, this);

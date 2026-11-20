@@ -1,6 +1,7 @@
 using System.Globalization;
 using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Mods;
+using static DdrLauncher.App.Localization.Translator;
 
 namespace DdrLauncher.App.ViewModels;
 
@@ -29,9 +30,9 @@ public sealed class ModItemViewModel(ModEntry model, MainViewModel owner) : Obse
 
     public IReadOnlyList<ModFile> Files => Model.Files;
 
-    public string FilesText => DatabaseViewModel.Count(Model.Files.Count, "file");
+    public string FilesText => Count(Model.Files.Count, "{0} file", "{0} files");
 
-    public string AddedText => Model.AddedUtc.ToLocalTime().ToString("d MMM yyyy", CultureInfo.InvariantCulture);
+    public string AddedText => Model.AddedUtc.ToLocalTime().ToString("d MMM yyyy", CultureInfo.CurrentUICulture);
 
     public string SizeText => FileSizeConverter.Format(Model.TotalSize);
 
