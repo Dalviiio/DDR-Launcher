@@ -27,8 +27,9 @@ public sealed record TeamMember(string PilotId, CrewRole Role);
 /// <param name="Row">The row name in that table.</param>
 /// <param name="Picture">The team's vehicle picture from the selection screen, as a game asset path; empty when it has none.</param>
 /// <param name="CrewPhoto">Photo of the crew (driver on the left, co-driver on the right); empty when the team has none or only a silhouette.</param>
+/// <param name="Livery">The parts of the team's livery on the car; null when unknown.</param>
 public sealed record Team(string Table, string Row, string Edition, int Number, string Name, string VehicleId, bool Enabled, IReadOnlyList<TeamMember> Members,
-    string Picture = "", string CrewPhoto = "")
+    string Picture = "", string CrewPhoto = "", IReadOnlyList<LiveryPart>? Livery = null)
 {
     /// <summary>The game's template rows ("Placeholder"), not real teams.</summary>
     public bool IsPlaceholder => GameData.IsPlaceholder(Row);
@@ -118,7 +119,8 @@ public sealed class GameData
             r.Get("TeamMembersList").Items().Select(m => new TeamMember(m.Get("PilotData", "RowName").Text(), Role(m.Get("Type").Text()))).ToList(),
             // The selected-state picture is in colour; older teams' normal one is dimmed.
             r.Get("VehicleSlotHover").Text() is { Length: > 0 } hover ? hover : r.Get("VehicleSlotNormal").Text(),
-            r.Get("TeamSelectionPicture").Text() is var photo && !photo.Contains("Placeholde", StringComparison.OrdinalIgnoreCase) ? photo : "")) : [])
+            r.Get("TeamSelectionPicture").Text() is var photo && !photo.Contains("Placeholde", StringComparison.OrdinalIgnoreCase) ? photo : "",
+            Liveries.Parts(r))) : [])
             .ToList();
 
         // A vehicle's picture: a clean side view ("_Right") from one of its teams, else one from a vehicle with the same model.

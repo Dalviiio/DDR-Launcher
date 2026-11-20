@@ -278,6 +278,8 @@
                                         <TextBlock Text="SKIN" Style="{StaticResource Text.Label}" Margin="0,0,0,6" />
                                         <ComboBox ItemsSource="{Binding SkinOptions}" SelectedItem="{Binding Skin}" ItemTemplate="{StaticResource SkinItem}" TextSearch.TextPath="SkinName"
                                                   AutomationProperties.Name="Skin" IsEnabled="{Binding CanEdit}" ToolTip="The liveries of this vehicle in this edition" />
+                                        <Button Content="Livery" c:Ui.Icon="{StaticResource Icon.Car}" Click="OnLivery" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                                ToolTip="See this livery on the car in 3D, export it and import your painted version" />
                                     </StackPanel>
                                     <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
                                         <TextBlock Text="DRIVER" Style="{StaticResource Text.Label}" Margin="0,0,0,6" />

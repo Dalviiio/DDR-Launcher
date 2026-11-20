@@ -191,7 +191,7 @@ public sealed partial class DatabaseViewModel : ObservableObject
         Error = null;
         try
         {
-            var additions = _store.Plan with { Changes = [] };
+            var additions = _store.Plan with { Changes = [], Paints = [] };
             Show(await Task.Run(() => GameData.Load(game, CacheFolder, additions, OodleFolders)));
             _ = LoadPicturesAsync(game);
         }

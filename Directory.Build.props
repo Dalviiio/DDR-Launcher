@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- CUE4Parse ships its native library in lib/, which MSBuild warns is not a .NET assembly. It is loaded at run time, not referenced. -->
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3246</MSBuildWarningsAsMessages>
     <!-- The self-contained publish ships one executable, without debug symbol files next to it. -->
     <DebugType Condition="'$(PublishProfile)' == 'SelfContained'">none</DebugType>
   </PropertyGroup>

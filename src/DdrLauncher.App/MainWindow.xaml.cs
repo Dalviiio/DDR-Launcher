@@ -114,6 +114,14 @@ public partial class MainWindow : Window
 
     private void OnResetCrew(object sender, RoutedEventArgs e) => _vm.Database.SelectedCrew?.Reset();
 
+    private void OnLivery(object sender, RoutedEventArgs e)
+    {
+        if (_vm.Database.SelectedCrew is { } crew)
+        {
+            LiveryWindow.Show(this, _vm.Database, crew);
+        }
+    }
+
     private async void OnApplyLineup(object sender, RoutedEventArgs e) => await _vm.Database.ApplyAsync();
 
 

@@ -7,6 +7,7 @@ using System.Windows.Media;
 using DdrLauncher.App.Mvvm;
 using DdrLauncher.Core.Data;
 using DdrLauncher.Core.Game;
+using DdrLauncher.Core.Paks;
 
 namespace DdrLauncher.App.ViewModels;
 
@@ -17,6 +18,14 @@ namespace DdrLauncher.App.ViewModels;
 public sealed partial class DatabaseViewModel
 {
     private static readonly string BuildFolder = Path.Combine(Settings.DataFolder, "Cache", "Build");
+
+    /// <summary>The game textures that liveries start from, copied out of the paks.</summary>
+    internal static readonly string TextureFolder = Path.Combine(Settings.DataFolder, "Cache", "Textures");
+
+    /// <summary>The painted livery pictures, named by their SHA-256.</summary>
+    internal static readonly string LiveryFolder = Path.Combine(Settings.DataFolder, "Liveries");
+
+    private Task<GameModels>? _models;
 
     private readonly LineupStore _store = LineupStore.Load();
     private List<CrewItem> _crews = [];
@@ -71,7 +80,7 @@ public sealed partial class DatabaseViewModel
     public bool CanEdit => _store.Active is not null;
 
     /// <summary>Edited crews plus added vehicles, drivers and teams in the profile in use.</summary>
-    public int EditedCount => _store.Plan is var plan ? plan.Changes.Count + plan.Vehicles.Count + plan.Pilots.Count + plan.Teams.Count : 0;
+    public int EditedCount => _store.Plan is var plan ? plan.Changes.Count + plan.Vehicles.Count + plan.Pilots.Count + plan.Teams.Count + plan.Paints.Count : 0;
 
     /// <summary>"· 3 changes" after the status; nothing on Default, which has none.</summary>
     public string ChangesText => CanEdit ? "· " + Count(EditedCount, "change") : "";
@@ -182,9 +191,14 @@ public sealed partial class DatabaseViewModel
         {
             var plan = _store.Plan;
             var placed = _store.PlacedSha256;
-            var hash = await Task.Run(() => Lineup.Install(
-                plan.IsEmpty ? null : Lineup.BuildPak(CacheFolder, BuildFolder, plan),
-                game.ModsFolder, placed, GameInstall.IsGameRunning));
+            var hash = await Task.Run(() =>
+            {
+                // The game textures are copied again when a pak changed since they were last taken.
+                Liveries.Fetch(game, TextureFolder, plan.Paints.Select(p => p.Texture).ToList(), OodleFolders);
+                return Lineup.Install(
+                    plan.IsEmpty ? null : Lineup.BuildPak(CacheFolder, BuildFolder, plan, TextureFolder, image => Images.Load(Path.Combine(LiveryFolder, image))),
+                    game.ModsFolder, placed, GameInstall.IsGameRunning);
+            });
             _store.Applied = plan.IsEmpty ? null : plan;
             _store.PlacedSha256 = hash;
             _store.AppliedBuild = Lineup.BuildVersion;
@@ -330,7 +344,59 @@ public sealed partial class DatabaseViewModel
     {
         _store.Active?.Teams.RemoveAll(t => t.Table == crew.Team.Table && t.Row == crew.Team.Row);
         _store.Active?.Changes.RemoveAll(c => c.Table == crew.Team.Table && c.Row == crew.Team.Row);
+        _store.Active?.Paints.RemoveAll(p => p.Table == crew.Team.Table && p.Row == crew.Team.Row);
         return SavedAsync();
+    }
+
+    /// <summary>The painted parts of a team's livery in the profile in use.</summary>
+    public IReadOnlyList<LiveryPaint> PaintsOf(CrewItem crew) =>
+        _store.Active?.Paints.Where(p => p.Table == crew.Team.Table && p.Row == crew.Team.Row).ToList() ?? [];
+
+    /// <summary>Copies the textures out of the game (once) and gives where each one is.</summary>
+    public Task<IReadOnlyDictionary<string, string>> FetchTexturesAsync(IReadOnlyCollection<string> textures) =>
+        _game is { } game
+            ? Task.Run(() => Liveries.Fetch(game, TextureFolder, textures, OodleFolders))
+            : Task.FromResult<IReadOnlyDictionary<string, string>>(new Dictionary<string, string>());
+
+    /// <summary>A fetched game texture, at most <paramref name="maxWidth"/> wide.</summary>
+    public static DecodedImage? GameTexture(string file, int maxWidth)
+    {
+        var files = Liveries.Open(TextureFolder, file);
+        return TextureDecoder.Decode(files.Uexp, maxWidth, files.Ubulk);
+    }
+
+    /// <summary>The car's 3D model; null when it cannot be read. The game's paks are mounted once, on first use.</summary>
+    public async Task<CarModel?> CarAsync(string blueprint)
+    {
+        if (_game is not { } game)
+        {
+            return null;
+        }
+
+        try
+        {
+            var models = await (_models ??= Task.Run(() => new GameModels(game, OodleFolders)));
+            return await Task.Run(() => models.Car(blueprint));
+        }
+        catch (Exception e) when (e is IOException or OodleMissingException or InvalidOperationException or UnauthorizedAccessException)
+        {
+            _models = null;
+            return null;
+        }
+    }
+
+    /// <summary>Replaces the painted parts of a team's livery in the profile in use (texture -> picture file name).</summary>
+    public void SavePaints(CrewItem crew, IReadOnlyDictionary<string, string> images, IReadOnlyDictionary<string, string> files)
+    {
+        if (_store.Active is not { } profile)
+        {
+            return;
+        }
+
+        profile.Paints.RemoveAll(p => p.Table == crew.Team.Table && p.Row == crew.Team.Row);
+        profile.Paints.AddRange(images.Select(i => new LiveryPaint(crew.Team.Table, crew.Team.Row, i.Key, files[i.Key], i.Value)));
+        _store.Save();
+        RaiseLineup();
     }
 
     internal void CrewsChanged()
@@ -338,6 +404,9 @@ public sealed partial class DatabaseViewModel
         if (_store.Active is { } profile)
         {
             profile.Changes = _crews.Select(c => c.Change).OfType<CrewChange>().ToList();
+
+            // A painted part goes with the livery it was painted on: another skin drops it.
+            profile.Paints.RemoveAll(p => _crewIndex.TryGetValue((p.Table, p.Row), out var crew) && crew.LiveryParts.All(l => l.Texture != p.Texture));
             _store.Save();
         }
 
@@ -492,6 +561,9 @@ public sealed class CrewItem : ObservableObject
 
     /// <summary>The picture of the livery the team wears.</summary>
     public ImageSource? Picture => Skin?.TeamPicture ?? TeamPicture;
+
+    /// <summary>The parts of the livery the team wears, as the game has them.</summary>
+    public IReadOnlyList<LiveryPart> LiveryParts => (Skin ?? this).Team.Livery ?? [];
 
     /// <summary>"#205 OVERDRIVE TOYOTA", as a skin in a list.</summary>
     public string SkinName => $"#{Team.Number} {Team.Name}";

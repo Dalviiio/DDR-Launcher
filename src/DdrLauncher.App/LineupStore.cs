@@ -19,8 +19,10 @@ public sealed class Profile
 
     public List<NewTeam> Teams { get; set; } = [];
 
+    public List<LiveryPaint> Paints { get; set; } = [];
+
     [JsonIgnore]
-    public LineupPlan Plan => new(Changes.ToList(), Vehicles.ToList(), Pilots.ToList(), Teams.ToList());
+    public LineupPlan Plan => new(Changes.ToList(), Vehicles.ToList(), Pilots.ToList(), Teams.ToList(), Paints.ToList());
 
     public void Set(LineupPlan plan)
     {
@@ -28,6 +30,7 @@ public sealed class Profile
         Vehicles = [.. plan.Vehicles];
         Pilots = [.. plan.Pilots];
         Teams = [.. plan.Teams];
+        Paints = [.. plan.Paints];
     }
 }
 

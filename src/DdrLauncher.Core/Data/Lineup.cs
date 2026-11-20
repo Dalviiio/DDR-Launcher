@@ -28,21 +28,25 @@ public sealed record NewTeam(string Table, string BaseRow, int Number, string Na
 }
 
 /// <summary>Everything the user changed or added. Applied as one mod pak. Two plans are equal when they hold the same items.</summary>
+/// <param name="Paints">Painted livery parts; null (a plan saved before liveries) means none.</param>
 public sealed record LineupPlan(
     IReadOnlyList<CrewChange> Changes,
     IReadOnlyList<NewVehicle> Vehicles,
     IReadOnlyList<NewPilot> Pilots,
-    IReadOnlyList<NewTeam> Teams)
+    IReadOnlyList<NewTeam> Teams,
+    IReadOnlyList<LiveryPaint>? Paints = null)
 {
     public static readonly LineupPlan Empty = new([], [], [], []);
 
-    public bool IsEmpty => Changes.Count == 0 && Vehicles.Count == 0 && Pilots.Count == 0 && Teams.Count == 0;
+    public IReadOnlyList<LiveryPaint> Paints { get; init; } = Paints ?? [];
+
+    public bool IsEmpty => Changes.Count == 0 && Vehicles.Count == 0 && Pilots.Count == 0 && Teams.Count == 0 && Paints.Count == 0;
 
     public bool Equals(LineupPlan? other) =>
         other is not null && Changes.SequenceEqual(other.Changes) && Vehicles.SequenceEqual(other.Vehicles)
-        && Pilots.SequenceEqual(other.Pilots) && Teams.SequenceEqual(other.Teams);
+        && Pilots.SequenceEqual(other.Pilots) && Teams.SequenceEqual(other.Teams) && Paints.SequenceEqual(other.Paints);
 
-    public override int GetHashCode() => HashCode.Combine(Changes.Count, Vehicles.Count, Pilots.Count, Teams.Count);
+    public override int GetHashCode() => HashCode.Combine(Changes.Count, Vehicles.Count, Pilots.Count, Teams.Count, Paints.Count);
 }
 
 /// <summary>
@@ -66,7 +70,9 @@ public static class Lineup
     /// <summary>Builds the mod pak from the cached game tables.</summary>
     /// <param name="cacheFolder">Where <see cref="GameData.Load"/> copied the game tables.</param>
     /// <param name="workFolder">Scratch folder for the rewritten tables; emptied first.</param>
-    public static byte[] BuildPak(string cacheFolder, string workFolder, LineupPlan plan)
+    /// <param name="textureFolder">Where <see cref="Liveries.Fetch"/> copied the textures the paints start from.</param>
+    /// <param name="loadImage">Reads a paint's picture (by file name) as BGRA pixels the size of its texture.</param>
+    public static byte[] BuildPak(string cacheFolder, string workFolder, LineupPlan plan, string textureFolder, Func<string, Paks.DecodedImage> loadImage)
     {
         if (Directory.Exists(workFolder))
         {
@@ -83,6 +89,18 @@ public static class Lineup
             table.Write(output);
             files[asset + ".uasset"] = File.ReadAllBytes(output);
             files[asset + ".uexp"] = File.ReadAllBytes(Path.ChangeExtension(output, ".uexp"));
+        }
+
+        foreach (var paint in plan.Paints)
+        {
+            var (package, file) = Liveries.Copy(paint);
+            var copy = LiveryTexture.Copy(Liveries.Open(textureFolder, paint.File), Liveries.Package(paint.Texture), package, loadImage(paint.Image));
+            files[file + ".uasset"] = copy.Uasset;
+            files[file + ".uexp"] = copy.Uexp;
+            if (copy.Ubulk.Length > 0)
+            {
+                files[file + ".ubulk"] = copy.Ubulk;
+            }
         }
 
         using var pak = new MemoryStream();
@@ -147,6 +165,15 @@ public static class Lineup
         {
             CheckTeamTable(editions, group.Key);
             ApplyCrews(Table(group.Key), group);
+        }
+
+        // Last: a paint goes on the team as it ends up, added teams included.
+        foreach (var paint in plan.Paints)
+        {
+            CheckTeamTable(editions, paint.Table);
+            var table = Table(paint.Table);
+            var row = TableRows.Rows(table).FirstOrDefault(r => r.Id() == paint.Row) ?? throw new InvalidDataException($"Team {paint.Row} is not in {paint.Table}.");
+            Liveries.Paint(table, row, paint);
         }
 
         return (tables, texts);
