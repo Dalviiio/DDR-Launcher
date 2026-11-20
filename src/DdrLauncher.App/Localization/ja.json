@@ -222,10 +222,6 @@
   "Missing": "ありません",
   "Dakar Desert Rally compresses its files with Oodle (oo2core_9_win64.dll). The launcher needs it to read the cars, drivers and liveries in the Paddock. The game does not ship it on its own.": "Dakar Desert Rally はファイルを Oodle（oo2core_9_win64.dll）で圧縮しています。パドックで車両、ドライバー、カラーリングを読み込むのに必要です。ゲームには単体では付属していません。",
   "Something went wrong": "問題が発生しました",
-  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nランチャーは動作を続けます。詳細はログにあります: {1}",
-  "Check for new versions?": "新しいバージョンを確認しますか？",
-  "Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.": "起動するたびに新しいバージョンを確認しますか？\n\nGitHub ページ（github.com/{0}）のバージョン一覧を読むだけです。あなたやゲーム、MOD の情報は送信されません。各アップデートはインストール前に作者の署名で確認されます。\n\n設定でいつでも変更できます。",
-  "Check": "確認する",
   "A new version is available": "新しいバージョンがあります",
   "Update": "更新する",
   "Dalviiio DDR Launcher {0} is available (you have {1}).": "Dalviiio DDR Launcher {0} が公開されています（現在 {1}）。",
@@ -235,5 +231,10 @@
   "The update did not work: {0}": "アップデートできませんでした: {0}",
   "Update to {0}": "{0} に更新",
   "Check for updates": "アップデートを確認",
-  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "起動するたびに GitHub ページで新しいバージョンを確認します。あなたの情報は送信されません。"
+  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "起動するたびに GitHub ページで新しいバージョンを確認します。あなたの情報は送信されません。",
+  "Updates": "アップデート",
+  "Should the launcher look for updates automatically?": "ランチャーのアップデートを自動で確認しますか？",
+  "Yes": "はい",
+  "No": "いいえ",
+  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nランチャーは動作を続けます。詳細はログにあります: {1}"
 }

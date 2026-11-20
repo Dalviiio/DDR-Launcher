@@ -37,9 +37,7 @@ public partial class MainWindow : Window
     {
         if (_vm.UpdatesNotAsked)
         {
-            _vm.CheckForUpdates = Confirm(T("Check for new versions?"),
-                T("Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.", App.ReleaseRepository),
-                T("Check"), DialogKind.Info);
+            _vm.CheckForUpdates = Confirm(T("Updates"), T("Should the launcher look for updates automatically?"), T("Yes"), DialogKind.Info, T("No"));
         }
 
         if (!_vm.CheckForUpdates)

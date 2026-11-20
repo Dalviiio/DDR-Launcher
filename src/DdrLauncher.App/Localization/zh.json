@@ -222,10 +222,6 @@
   "Missing": "缺失",
   "Dakar Desert Rally compresses its files with Oodle (oo2core_9_win64.dll). The launcher needs it to read the cars, drivers and liveries in the Paddock. The game does not ship it on its own.": "Dakar Desert Rally 使用 Oodle（oo2core_9_win64.dll）压缩文件。启动器需要它来读取围场中的车辆、车手和涂装。游戏没有单独附带此文件。",
   "Something went wrong": "出现问题",
-  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\n启动器会继续运行。详情见日志：{1}",
-  "Check for new versions?": "检查新版本？",
-  "Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.": "启动器每次启动时是否检查新版本？\n\n它只读取 GitHub 页面（github.com/{0}）上的版本列表，不会发送任何关于你、你的游戏或模组的信息。每次更新在安装前都会用作者的签名校验。\n\n你可以在设置中更改。",
-  "Check": "检查",
   "A new version is available": "有新版本可用",
   "Update": "更新",
   "Dalviiio DDR Launcher {0} is available (you have {1}).": "Dalviiio DDR Launcher {0} 已发布（你的版本是 {1}）。",
@@ -235,5 +231,10 @@
   "The update did not work: {0}": "更新失败：{0}",
   "Update to {0}": "更新到 {0}",
   "Check for updates": "检查更新",
-  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "每次启动时，启动器会在 GitHub 页面查看是否有新版本，不会发送任何关于你的信息。"
+  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "每次启动时，启动器会在 GitHub 页面查看是否有新版本，不会发送任何关于你的信息。",
+  "Updates": "更新",
+  "Should the launcher look for updates automatically?": "是否让启动器自动检查更新？",
+  "Yes": "是",
+  "No": "否",
+  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\n启动器会继续运行。详情见日志：{1}"
 }

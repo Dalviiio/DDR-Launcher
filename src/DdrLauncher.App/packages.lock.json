@@ -2,12 +2,6 @@
   "version": 1,
   "dependencies": {
     "net8.0-windows7.0": {
-      "Microsoft.NET.ILLink.Tasks": {
-        "type": "Direct",
-        "requested": "[8.0.30, )",
-        "resolved": "8.0.30",
-        "contentHash": "SfmwuZjUPBTEoBMAsXZ/hWkaEK9oL+Y/UtAx7N6RyWHfcMt9J0ExrNPuOgTyPbCXIyiTBFsxFNrPLEZNPmJcvA=="
-      },
       "BCnEncoder.Net": {
         "type": "Transitive",
         "resolved": "2.2.1",
@@ -148,13 +142,6 @@
           "SharpCompress": "[0.50.5, )",
           "UAssetAPI": "[1.1.0, )"
         }
-      }
-    },
-    "net8.0-windows7.0/win-x64": {
-      "Blake3": {
-        "type": "Transitive",
-        "resolved": "2.0.0",
-        "contentHash": "v447kojeuNYSY5dvtVGG2bv1+M3vOWJXcrYWwXho/2uUpuwK6qPeu5WSMlqLm4VRJu96kysVO11La0zN3dLAuQ=="
       }
     }
   }

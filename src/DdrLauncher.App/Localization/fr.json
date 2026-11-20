@@ -222,10 +222,6 @@
   "Missing": "Manquant",
   "Dakar Desert Rally compresses its files with Oodle (oo2core_9_win64.dll). The launcher needs it to read the cars, drivers and liveries in the Paddock. The game does not ship it on its own.": "Dakar Desert Rally compresse ses fichiers avec Oodle (oo2core_9_win64.dll). Le launcher en a besoin pour lire les voitures, pilotes et livrées du Paddock. Le jeu ne le fournit pas à part.",
   "Something went wrong": "Un problème est survenu",
-  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nLe launcher continue de tourner. Les détails sont dans son journal : {1}",
-  "Check for new versions?": "Rechercher les nouvelles versions ?",
-  "Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.": "Le launcher doit-il chercher une nouvelle version à chaque démarrage ?\n\nIl lit seulement la liste des versions sur sa page GitHub (github.com/{0}). Rien sur vous, votre jeu ou vos mods n'est envoyé. Chaque mise à jour est vérifiée avec la signature de l'auteur avant d'être installée.\n\nVous pourrez changer ce choix dans les Paramètres.",
-  "Check": "Vérifier",
   "A new version is available": "Une nouvelle version est disponible",
   "Update": "Mettre à jour",
   "Dalviiio DDR Launcher {0} is available (you have {1}).": "Dalviiio DDR Launcher {0} est disponible (vous avez la {1}).",
@@ -235,5 +231,10 @@
   "The update did not work: {0}": "La mise à jour n'a pas marché : {0}",
   "Update to {0}": "Mettre à jour en {0}",
   "Check for updates": "Rechercher les mises à jour",
-  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "À chaque démarrage, le launcher regarde sur sa page GitHub s'il existe une nouvelle version. Rien sur vous n'est envoyé."
+  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "À chaque démarrage, le launcher regarde sur sa page GitHub s'il existe une nouvelle version. Rien sur vous n'est envoyé.",
+  "Updates": "Mises à jour",
+  "Should the launcher look for updates automatically?": "Voulez-vous que le launcher cherche automatiquement les mises à jour ?",
+  "Yes": "Oui",
+  "No": "Non",
+  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nLe launcher continue de tourner. Les détails sont dans son journal : {1}"
 }

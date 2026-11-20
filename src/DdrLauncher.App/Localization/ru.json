@@ -222,10 +222,6 @@
   "Missing": "Отсутствует",
   "Dakar Desert Rally compresses its files with Oodle (oo2core_9_win64.dll). The launcher needs it to read the cars, drivers and liveries in the Paddock. The game does not ship it on its own.": "Dakar Desert Rally сжимает свои файлы с помощью Oodle (oo2core_9_win64.dll). Лаунчеру он нужен, чтобы читать машины, пилотов и ливреи в Паддоке. Отдельно игра его не поставляет.",
   "Something went wrong": "Что-то пошло не так",
-  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nЛаунчер продолжает работать. Подробности в его журнале: {1}",
-  "Check for new versions?": "Проверять новые версии?",
-  "Should the launcher look for a new version each time it starts?\n\nIt only reads the list of versions on its GitHub page (github.com/{0}). Nothing about you, your game or your mods is sent. Each update is checked with the author's signature before it is installed.\n\nYou can change this in Settings.": "Проверять новую версию при каждом запуске?\n\nЛаунчер только читает список версий на своей странице GitHub (github.com/{0}). Ничего о вас, вашей игре или модах не отправляется. Каждое обновление перед установкой проверяется подписью автора.\n\nЭто можно изменить в настройках.",
-  "Check": "Проверять",
   "A new version is available": "Доступна новая версия",
   "Update": "Обновить",
   "Dalviiio DDR Launcher {0} is available (you have {1}).": "Доступен Dalviiio DDR Launcher {0} (у вас {1}).",
@@ -235,5 +231,10 @@
   "The update did not work: {0}": "Обновить не удалось: {0}",
   "Update to {0}": "Обновить до {0}",
   "Check for updates": "Проверять обновления",
-  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "При каждом запуске лаунчер смотрит на своей странице GitHub, есть ли новая версия. Ничего о вас не отправляется."
+  "At each start, the launcher looks at its GitHub page for a new version. Nothing about you is sent.": "При каждом запуске лаунчер смотрит на своей странице GitHub, есть ли новая версия. Ничего о вас не отправляется.",
+  "Updates": "Обновления",
+  "Should the launcher look for updates automatically?": "Проверять обновления автоматически?",
+  "Yes": "Да",
+  "No": "Нет",
+  "{0}\n\nThe launcher keeps running. The details are in its log: {1}": "{0}\n\nЛаунчер продолжает работать. Подробности в его журнале: {1}"
 }
