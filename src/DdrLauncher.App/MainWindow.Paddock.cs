@@ -84,14 +84,6 @@ public partial class MainWindow
         }
     }
 
-    private async void OnDeleteVehicle(object sender, RoutedEventArgs e)
-    {
-        if (_vm.Database.SelectedVehicle is { IsAdded: true } vehicle && Confirm(T("Delete {0}?", vehicle.Name), T("It is removed from the launcher now, and from the game at the next Apply."), T("Delete")))
-        {
-            await _vm.Database.DeleteVehicleAsync(vehicle);
-        }
-    }
-
     private async void OnDeletePilot(object sender, RoutedEventArgs e)
     {
         if (_vm.Database.SelectedPilot is { IsAdded: true } pilot && Confirm(T("Delete {0}?", pilot.Name), T("They are removed from the launcher now, and from the game at the next Apply."), T("Delete")))

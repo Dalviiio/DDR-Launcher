@@ -31,7 +31,7 @@ public sealed class ModLibrary
 
     public ModLibrary(string libraryRoot, Func<bool> isGameRunning)
     {
-        _root = PathContainment.NormalizeRoot(libraryRoot);
+        _root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(libraryRoot));
         _isGameRunning = isGameRunning;
         Directory.CreateDirectory(_root);
         _mods = LoadIndex();

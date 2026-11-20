@@ -330,9 +330,6 @@
                                             <ImageBrush ImageSource="{Binding Picture}" Stretch="Uniform" />
                                         </Border.Background>
                                     </Border>
-                                    <Button Grid.Column="1" Style="{StaticResource DangerButton}" Content="{l:T 'Delete'}" c:Ui.Icon="{StaticResource Icon.Delete}" Click="OnDeleteVehicle"
-                                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,12,12,0" ToolTip="{l:T 'Delete this added vehicle'}"
-                                            Visibility="{Binding IsAdded, Converter={StaticResource BoolToVisibility}}" />
                                     <StackPanel Grid.Column="1" Margin="10,26,30,22" VerticalAlignment="Center">
                                         <TextBlock FontSize="11" FontWeight="ExtraBold" Foreground="{StaticResource Brush.AccentHover}">
                                             <Run Text="{Binding Brand, Mode=OneWay}" /> <Run Text="·" /> <Run Text="{Binding ClassText, Mode=OneWay}" />
@@ -387,10 +384,6 @@
                                                 <Border.Background>
                                                     <ImageBrush ImageSource="{Binding Picture}" Stretch="Uniform" />
                                                 </Border.Background>
-                                            </Border>
-                                            <Border Background="{StaticResource Brush.Info}" CornerRadius="5" Padding="6,1" Margin="8" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                                    Visibility="{Binding IsAdded, Converter={StaticResource BoolToVisibility}}">
-                                                <TextBlock Text="{l:T 'NEW'}" FontSize="9" FontWeight="ExtraBold" Foreground="{StaticResource Brush.OnAccent}" />
                                             </Border>
                                             <StackPanel Grid.Row="1" Margin="12,6,12,0">
                                                 <TextBlock Text="{Binding DisplayName}" FontWeight="Bold" FontSize="13" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayName}" />
@@ -727,7 +720,7 @@
                             </Grid>
 
                             <Grid>
-                                <ListBox x:Name="StageList" ItemsSource="{Binding ModsView}" SelectedItem="{Binding SelectedMod}" Style="{StaticResource CardList}" ItemContainerStyle="{StaticResource ModCard}" Margin="0,8,0,0">
+                                <ListBox ItemsSource="{Binding ModsView}" SelectedItem="{Binding SelectedMod}" Style="{StaticResource CardList}" ItemContainerStyle="{StaticResource ModCard}" Margin="0,8,0,0">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Grid Height="132">

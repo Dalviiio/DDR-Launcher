@@ -281,7 +281,7 @@ public sealed partial class DatabaseViewModel : ObservableObject
         string Crew(Team t) => string.Join(" / ", t.Members.Where(m => m.Role != CrewRole.Other).Select(m => pilotNames.GetValueOrDefault(m.PilotId, m.PilotId)));
 
         _vehicles = data.Vehicles
-            .Select(v => new VehicleItem(v, byVehicle[v.Id].Select(t => new TeamLine(t, Crew(t))).ToList(), _store.Plan.Vehicles.Any(n => n.Id == v.Id)))
+            .Select(v => new VehicleItem(v, byVehicle[v.Id].Select(t => new TeamLine(t, Crew(t))).ToList()))
             .OrderBy(v => v.Name, StringComparer.OrdinalIgnoreCase).ToList();
         var vehicleNames = _vehicles.GroupBy(v => v.Id).ToDictionary(g => g.Key, g => g.First().DisplayName);
         _pilots = data.Pilots
@@ -470,14 +470,11 @@ public sealed record Stat(string Label, int Value)
     public double Fraction => Math.Clamp(Value / 100.0, 0, 1);
 }
 
-public sealed class VehicleItem(Vehicle model, IReadOnlyList<TeamLine> teams, bool isAdded) : ObservableObject
+public sealed class VehicleItem(Vehicle model, IReadOnlyList<TeamLine> teams) : ObservableObject
 {
     private ImageSource? _picture;
 
     public Vehicle Model { get; } = model;
-
-    /// <summary>A vehicle the user added: it can be deleted.</summary>
-    public bool IsAdded { get; } = isAdded;
 
     public ImageSource? Picture
     {

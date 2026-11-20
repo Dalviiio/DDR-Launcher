@@ -54,12 +54,12 @@ public class LineupPlanTests
     [Fact]
     public void PlansWithTheSameItemsAreEqual()
     {
-        var a = new DdrLauncher.Core.Data.LineupPlan([new("T", "1", "V")], [], [], []);
-        var b = new DdrLauncher.Core.Data.LineupPlan([new("T", "1", "V")], [], [], []);
+        var a = new DdrLauncher.Core.Data.LineupPlan([new("T", "1", "V")], [], []);
+        var b = new DdrLauncher.Core.Data.LineupPlan([new("T", "1", "V")], [], []);
 
         Assert.Equal(a, b);
         Assert.NotEqual(a, DdrLauncher.Core.Data.LineupPlan.Empty);
-        Assert.Equal(DdrLauncher.Core.Data.LineupPlan.Empty, new DdrLauncher.Core.Data.LineupPlan([], [], [], []));
+        Assert.Equal(DdrLauncher.Core.Data.LineupPlan.Empty, new DdrLauncher.Core.Data.LineupPlan([], [], []));
     }
 
     [Fact]

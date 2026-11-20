@@ -50,7 +50,6 @@
     <FontFamily x:Key="Font.Mono">Cascadia Mono, Consolas</FontFamily>
 
     <CornerRadius x:Key="Radius.Control">10</CornerRadius>
-    <CornerRadius x:Key="Radius.Card">14</CornerRadius>
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 

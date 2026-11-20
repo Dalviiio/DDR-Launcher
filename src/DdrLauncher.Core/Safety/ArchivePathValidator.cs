@@ -1,3 +1,5 @@
+
+
 namespace DdrLauncher.Core.Safety;
 
 /// <summary>
@@ -40,24 +42,6 @@ public static class ArchivePathValidator
         }
 
         return segments;
-    }
-
-    /// <summary>
-    /// Validates an archive entry path and returns the absolute path it maps to, guaranteed to be
-    /// strictly inside <paramref name="targetRoot"/>.
-    /// </summary>
-    public static string ResolveEntryPath(string targetRoot, string entryPath)
-    {
-        var segments = GetSafeSegments(entryPath);
-        var root = PathContainment.NormalizeRoot(targetRoot);
-        var resolved = Path.GetFullPath(Path.Combine([root, .. segments]));
-
-        if (!PathContainment.IsStrictlyInside(root, resolved))
-        {
-            throw new UnsafePathException(entryPath, "path escapes the target folder");
-        }
-
-        return resolved;
     }
 
     private static void ValidateSegment(string entryPath, string segment)
@@ -127,3 +111,6 @@ public static class ArchivePathValidator
         return names;
     }
 }
+
+/// <summary>Thrown when a path is rejected by a safety rule. The path is never used after this is thrown.</summary>
+public sealed class UnsafePathException(string path, string reason) : Exception($"Unsafe path '{path}': {reason}");

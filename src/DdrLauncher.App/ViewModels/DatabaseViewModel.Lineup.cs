@@ -79,7 +79,7 @@ public sealed partial class DatabaseViewModel
     public bool CanEdit => _store.Active is not null;
 
     /// <summary>Edited crews plus added vehicles, drivers and teams in the profile in use.</summary>
-    public int EditedCount => _store.Plan is var plan ? plan.Changes.Count + plan.Vehicles.Count + plan.Pilots.Count + plan.Teams.Count + plan.Paints.Count : 0;
+    public int EditedCount => _store.Plan is var plan ? plan.Changes.Count + plan.Pilots.Count + plan.Teams.Count + plan.Paints.Count : 0;
 
     /// <summary>"· 3 changes" after the status; nothing on Default, which has none.</summary>
     public string ChangesText => CanEdit ? "· " + Count(EditedCount, "{0} change", "{0} changes") : "";
@@ -311,19 +311,6 @@ public sealed partial class DatabaseViewModel
             skin.HasCoDriver ? (coDriver ?? driver).Id : null));
         await SavedAsync();
         SelectedCrew = _crews.FirstOrDefault(c => c.Team.Number == number);
-    }
-
-    /// <summary>Removes a vehicle the user added, unless a team uses it.</summary>
-    public Task DeleteVehicleAsync(VehicleItem vehicle)
-    {
-        if (_crews.Any(c => c.Vehicle == vehicle || c.OriginalVehicle == vehicle))
-        {
-            Report(T("{0} is used by a team", vehicle.Name), true);
-            return Task.CompletedTask;
-        }
-
-        _store.Active?.Vehicles.RemoveAll(v => v.Id == vehicle.Id);
-        return SavedAsync();
     }
 
     /// <summary>Removes a driver the user added, unless a team uses them.</summary>

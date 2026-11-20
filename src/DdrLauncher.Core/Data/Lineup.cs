@@ -12,9 +12,6 @@ namespace DdrLauncher.Core.Data;
 /// </param>
 public sealed record CrewChange(string Table, string Row, string? VehicleId = null, string? DriverId = null, string? CoDriverId = null, string? SkinRow = null);
 
-/// <summary>A new vehicle: a copy of <paramref name="BaseId"/> (same 3D model and handling) under its own name, price and stats.</summary>
-public sealed record NewVehicle(string Id, string BaseId, string Name, int Price, int Speed, int Acceleration, int Handling, int Strength);
-
 /// <summary>A new driver or co-driver.</summary>
 public sealed record NewPilot(string Id, string Name, string CountryId);
 
@@ -31,22 +28,20 @@ public sealed record NewTeam(string Table, string BaseRow, int Number, string Na
 /// <param name="Paints">Painted livery parts; null (a plan saved before liveries) means none.</param>
 public sealed record LineupPlan(
     IReadOnlyList<CrewChange> Changes,
-    IReadOnlyList<NewVehicle> Vehicles,
     IReadOnlyList<NewPilot> Pilots,
     IReadOnlyList<NewTeam> Teams,
     IReadOnlyList<LiveryPaint>? Paints = null)
 {
-    public static readonly LineupPlan Empty = new([], [], [], []);
+    public static readonly LineupPlan Empty = new([], [], []);
 
     public IReadOnlyList<LiveryPaint> Paints { get; init; } = Paints ?? [];
 
-    public bool IsEmpty => Changes.Count == 0 && Vehicles.Count == 0 && Pilots.Count == 0 && Teams.Count == 0 && Paints.Count == 0;
+    public bool IsEmpty => Changes.Count == 0 && Pilots.Count == 0 && Teams.Count == 0 && Paints.Count == 0;
 
     public bool Equals(LineupPlan? other) =>
-        other is not null && Changes.SequenceEqual(other.Changes) && Vehicles.SequenceEqual(other.Vehicles)
-        && Pilots.SequenceEqual(other.Pilots) && Teams.SequenceEqual(other.Teams) && Paints.SequenceEqual(other.Paints);
+        other is not null && Changes.SequenceEqual(other.Changes) && Pilots.SequenceEqual(other.Pilots) && Teams.SequenceEqual(other.Teams) && Paints.SequenceEqual(other.Paints);
 
-    public override int GetHashCode() => HashCode.Combine(Changes.Count, Vehicles.Count, Pilots.Count, Teams.Count, Paints.Count);
+    public override int GetHashCode() => HashCode.Combine(Changes.Count, Pilots.Count, Teams.Count, Paints.Count);
 }
 
 /// <summary>
@@ -150,10 +145,6 @@ public static class Lineup
         UAsset Table(string name) =>
             tables.TryGetValue(name, out var table) ? table : tables[name] = TableRows.Open(cacheFolder, name);
 
-        foreach (var vehicle in plan.Vehicles)
-        {
-            AddVehicle(Table("DT_VehicleData"), vehicle, texts);
-        }
 
         foreach (var pilot in plan.Pilots)
         {
@@ -185,20 +176,6 @@ public static class Lineup
         }
 
         return (tables, texts);
-    }
-
-    private static void AddVehicle(UAsset table, NewVehicle vehicle, GameTexts texts)
-    {
-        var row = Clone(table, vehicle.BaseId, vehicle.Id);
-
-        // The game shows the text whose id is in NameId (from its text database); NameIdText is only a label.
-        row.SetInt("NameId", texts.Add(vehicle.Name));
-        row.SetName(table, vehicle.Name, "NameIdText");
-        row.SetInt("Price", vehicle.Price);
-        row.SetInt("SpeedStat", vehicle.Speed);
-        row.SetInt("AccelerationStat", vehicle.Acceleration);
-        row.SetInt("HandlingStat", vehicle.Handling);
-        row.SetInt("StrengthStat", vehicle.Strength);
     }
 
     private static void AddPilot(UAsset table, NewPilot pilot, GameTexts texts)
