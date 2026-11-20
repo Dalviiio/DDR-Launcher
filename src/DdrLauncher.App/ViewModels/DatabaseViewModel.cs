@@ -221,6 +221,11 @@ public sealed partial class DatabaseViewModel : ObservableObject
     public async Task RetranslateAsync()
     {
         Raise(null);
+        foreach (var chip in Editions)
+        {
+            chip.Retranslate();
+        }
+
         await ReloadAsync();
     }
 
@@ -443,8 +448,10 @@ public sealed class TeamLine(Team team, string detail, CrewRole? role = null) : 
 }
 
 /// <summary>An edition plate: "DAKAR" over "22", or "EDITION" over "Classics". The key "All" is the plate for every edition.</summary>
-public sealed record EditionChip(string Key)
+public sealed class EditionChip(string key) : ObservableObject
 {
+    public string Key { get; } = key;
+
     public bool IsDefault => Key == "All";
 
     public string Caption => T(IsDefault ? "EDITIONS" : DatabaseViewModel.DakarEdition().IsMatch(Key) ? "DAKAR" : "EDITION");
@@ -453,6 +460,9 @@ public sealed record EditionChip(string Key)
 
     /// <summary>"Dakar 22", "Classics".</summary>
     public string Name => DatabaseViewModel.EditionName(Key);
+
+    /// <summary>Shows the plate's words again in the language now in use.</summary>
+    public void Retranslate() => Raise(null);
 }
 
 public sealed record Stat(string Label, int Value)
