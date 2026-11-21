@@ -5,7 +5,7 @@ using Microsoft.Win32;
 namespace DdrLauncher.Core.Game;
 
 /// <summary>
-/// A Dakar Desert Rally install. The launcher only ever writes into <see cref="ModsFolder"/>.
+/// A Dakar Desert Rally install. The launcher only ever writes into <see cref="ModsFolder"/> and <see cref="Ue4ssModsFolder"/>.
 /// </summary>
 public sealed partial class GameInstall
 {
@@ -29,6 +29,9 @@ public sealed partial class GameInstall
 
     /// <summary>Pak mods are loaded from here, after the game's own paks.</summary>
     public string ModsFolder => Path.Combine(PaksFolder, "~mods");
+
+    /// <summary>UE4SS Lua mods load from here; its parent folder exists only when UE4SS is installed.</summary>
+    public string Ue4ssModsFolder => Path.Combine(Folder, ProjectFolderName, "Binaries", "Win64", "ue4ss", "Mods");
 
     public static bool IsValid(string? folder) =>
         !string.IsNullOrWhiteSpace(folder) && Directory.Exists(Path.Combine(folder, ProjectFolderName, "Content", "Paks"));

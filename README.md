@@ -6,7 +6,7 @@ This is a beta. If something goes wrong, please report it (see below).
 
 ## What it does
 
-The Mods page imports `.pak` mods, or `.zip`, `.rar` and `.7z` archives holding them, and turns each one on or off.
+The Mods page imports `.pak` mods, or `.zip`, `.rar` and `.7z` archives holding them, and turns each one on or off. It also takes UE4SS Lua mods (a folder with `Scripts/main.lua`, or an archive holding one): those go into the game's UE4SS mods folder, so UE4SS must already be installed.
 
 The Paddock lists every team of every edition: Dakar 20, 21 and 22, Classics, Snowrunner, and editions that mods add. You can change a team's vehicle, livery, driver and co-driver, add teams and drivers, and keep each setup in its own profile.
 
@@ -37,9 +37,9 @@ Open an issue on this repository and attach the log: `%LocalAppData%\DalviiioDDR
 
 ## Safety
 
-- The launcher writes only in the game's `~mods` folder and in its own data folder (`%LocalAppData%\DalviiioDDRLauncher`).
+- The launcher writes only in the game's `~mods` folder, in the UE4SS mods folder (`Binaries\Win64\ue4ss\Mods`, for Lua mods) and in its own data folder (`%LocalAppData%\DalviiioDDRLauncher`).
 - It removes only the files it placed itself, checked by their hash, and changes nothing while the game is running.
-- Mod archives are treated as untrusted: their paths are checked before anything is extracted, and mod content is never run.
+- Mod archives are treated as untrusted: their paths are checked before anything is extracted, and mod content is never run. Lua mods bring only `.lua`, `.txt`, `.json` and `.ini` files, never a `.dll`.
 
 ## Building
 

@@ -8,7 +8,8 @@ namespace DdrLauncher.Core.Mods;
 
 /// <summary>
 /// The mod library. Imported mods are stored in <c>libraryRoot/&lt;id&gt;/</c>; enabling a mod copies its files into the
-/// game's mods folder, disabling removes them again. Only files the launcher placed itself are ever deleted.
+/// game's mods folder (pak mods) or UE4SS mods folder (Lua mods), disabling removes them again.
+/// Only files the launcher placed itself are ever deleted.
 /// </summary>
 public sealed class ModLibrary
 {
@@ -17,6 +18,10 @@ public sealed class ModLibrary
 
     public static readonly IReadOnlySet<string> ArchiveExtensions =
         new HashSet<string>([".zip", ".rar", ".7z"], StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>What a UE4SS Lua mod may bring. Native code (.dll) is never imported.</summary>
+    public static readonly IReadOnlySet<string> Ue4ssExtensions =
+        new HashSet<string>([".lua", ".txt", ".json", ".ini"], StringComparer.OrdinalIgnoreCase);
 
     private const string IndexFile = "library.json";
     private const int MaxFiles = 1_000;
@@ -40,8 +45,9 @@ public sealed class ModLibrary
     public IReadOnlyList<ModEntry> Mods => _mods;
 
     /// <summary>
-    /// Imports a .pak file (with its .utoc/.ucas next to it), an archive or a folder. Only pak files are kept, flattened
-    /// by file name, so no path from the source is ever used on disk.
+    /// Imports a .pak file (with its .utoc/.ucas next to it), an archive or a folder. Pak files are kept flattened by file
+    /// name. A source with no pak but a UE4SS Lua mod (a folder holding Scripts/main.lua) is kept as that mod folder,
+    /// with checked relative paths and only <see cref="Ue4ssExtensions"/> files.
     /// </summary>
     public ModEntry Import(string source)
     {
@@ -53,7 +59,7 @@ public sealed class ModLibrary
         {
             if (Directory.Exists(source))
             {
-                CopyFromFolder(source, staging);
+                CopyFromFolder(source, staging, PakTarget);
             }
             else if (PakExtensions.Contains(Path.GetExtension(source)))
             {
@@ -61,24 +67,32 @@ public sealed class ModLibrary
             }
             else if (ArchiveExtensions.Contains(Path.GetExtension(source)))
             {
-                ExtractArchive(source, staging);
+                ExtractArchive(source, staging, PakTarget);
             }
             else
             {
                 throw new ImportRejectedException("only .pak files, .zip/.rar/.7z archives and folders can be added");
             }
 
-            var files = Directory.GetFiles(staging)
-                .Select(f => new ModFile(Path.GetFileName(f), new FileInfo(f).Length, FileHasher.Sha256(f)))
-                .OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (!files.Any(f => f.Name.EndsWith(".pak", StringComparison.OrdinalIgnoreCase)))
+            var ue4ss = false;
+            if (!Directory.EnumerateFiles(staging, "*.pak").Any())
             {
-                throw new ImportRejectedException("it contains no .pak file");
+                if (File.Exists(source) && !ArchiveExtensions.Contains(Path.GetExtension(source)))
+                {
+                    throw new ImportRejectedException("it contains no .pak file");
+                }
+
+                ImportUe4ssMod(source, staging, name);
+                ue4ss = true;
             }
 
+            var files = Directory.GetFiles(staging, "*", SearchOption.AllDirectories)
+                .Select(f => new ModFile(Path.GetRelativePath(staging, f).Replace('\\', '/'), new FileInfo(f).Length, FileHasher.Sha256(f)))
+                .OrderBy(f => f.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             Directory.Move(staging, Path.Combine(_root, id));
-            var mod = new ModEntry { Id = id, Name = name, AddedUtc = DateTime.UtcNow, Files = files };
+            var mod = new ModEntry { Id = id, Name = name, AddedUtc = DateTime.UtcNow, Files = files, Ue4ss = ue4ss };
             _mods.Add(mod);
             SaveIndex();
             return mod;
@@ -90,10 +104,14 @@ public sealed class ModLibrary
         }
     }
 
-    /// <summary>Copies the mod's files into the game. Refuses to overwrite a file the launcher did not place.</summary>
-    public void Enable(ModEntry mod, string modsFolder)
+    /// <summary>
+    /// Copies the mod's files into the game: pak mods into <paramref name="modsFolder"/>, UE4SS mods into
+    /// <paramref name="ue4ssModsFolder"/>. Refuses to overwrite a file the launcher did not place.
+    /// </summary>
+    public void Enable(ModEntry mod, string modsFolder, string? ue4ssModsFolder = null)
     {
         EnsureGameClosed();
+        modsFolder = TargetFolder(mod, modsFolder, ue4ssModsFolder);
         foreach (var file in mod.Files)
         {
             var owner = _mods.FirstOrDefault(m => m != mod && m.Enabled && m.Files.Any(f => NameEquals(f.Name, file.Name)));
@@ -118,6 +136,7 @@ public sealed class ModLibrary
                 continue; // same hash, checked above
             }
 
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             var temp = target + ".ddr-tmp";
             File.Copy(Path.Combine(_root, mod.Id, file.Name), temp, overwrite: true);
             File.Move(temp, target);
@@ -130,9 +149,11 @@ public sealed class ModLibrary
     /// <summary>
     /// Removes the mod's files from the game. A file changed since it was placed is left where it is; its name is returned.
     /// </summary>
-    public IReadOnlyList<string> Disable(ModEntry mod, string modsFolder)
+    public IReadOnlyList<string> Disable(ModEntry mod, string modsFolder, string? ue4ssModsFolder = null)
     {
         EnsureGameClosed();
+        // No UE4SS check here: once UE4SS is gone there is nothing left to remove, and disabling must still work.
+        modsFolder = mod.Ue4ss ? ue4ssModsFolder ?? throw new ArgumentNullException(nameof(ue4ssModsFolder)) : modsFolder;
         var kept = new List<string>();
         foreach (var file in mod.Files)
         {
@@ -145,6 +166,7 @@ public sealed class ModLibrary
             if (FileHasher.HashEquals(FileHasher.Sha256(target), file.Sha256))
             {
                 File.Delete(target);
+                DeleteEmptyFolders(Path.GetDirectoryName(target)!, modsFolder);
             }
             else
             {
@@ -158,9 +180,9 @@ public sealed class ModLibrary
     }
 
     /// <summary>Disables the mod if needed, then deletes it from the library.</summary>
-    public IReadOnlyList<string> Remove(ModEntry mod, string? modsFolder)
+    public IReadOnlyList<string> Remove(ModEntry mod, string? modsFolder, string? ue4ssModsFolder = null)
     {
-        var kept = mod.Enabled && modsFolder is not null ? Disable(mod, modsFolder) : [];
+        var kept = mod.Enabled && modsFolder is not null ? Disable(mod, modsFolder, ue4ssModsFolder) : [];
         _mods.Remove(mod);
         SaveIndex();
         Directory.Delete(Path.Combine(_root, mod.Id), recursive: true);
@@ -168,6 +190,103 @@ public sealed class ModLibrary
     }
 
     private void EnsureGameClosed() => ModsGuard.EnsureGameClosed(_isGameRunning);
+
+    private static string TargetFolder(ModEntry mod, string modsFolder, string? ue4ssModsFolder)
+    {
+        if (!mod.Ue4ss)
+        {
+            return modsFolder;
+        }
+
+        // The Mods folder may be missing; UE4SS itself (its parent) must be there.
+        if (ue4ssModsFolder is null || !Directory.Exists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(ue4ssModsFolder))))
+        {
+            throw new InvalidOperationException("UE4SS is not installed in the game. Install it, then enable this mod.");
+        }
+
+        return ue4ssModsFolder;
+    }
+
+    /// <summary>Deletes <paramref name="folder"/> and its parents while they are empty, stopping before <paramref name="root"/>.</summary>
+    private static void DeleteEmptyFolders(string folder, string root)
+    {
+        root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+        for (var dir = Path.GetFullPath(folder);
+             dir.Length > root.Length && dir.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
+                 && !Directory.EnumerateFileSystemEntries(dir).Any();
+             dir = Path.GetDirectoryName(dir)!)
+        {
+            Directory.Delete(dir);
+        }
+    }
+
+    private static string? PakTarget(string path)
+    {
+        var fileName = path.Split('/', '\\')[^1];
+        if (!PakExtensions.Contains(Path.GetExtension(fileName)))
+        {
+            return null;
+        }
+
+        ArchivePathValidator.GetSafeSegments(fileName);
+        return fileName;
+    }
+
+    private static string? Ue4ssTarget(string path) =>
+        Ue4ssExtensions.Contains(Path.GetExtension(path)) ? Path.Combine([.. ArchivePathValidator.GetSafeSegments(path)]) : null;
+
+    /// <summary>
+    /// Keeps the one UE4SS mod in <paramref name="source"/> as <c>staging/&lt;mod folder&gt;/</c>. The mod folder is the one
+    /// holding <c>Scripts/main.lua</c>; when that is the top of the source, it is named after the source. An empty
+    /// enabled.txt is added when missing, so UE4SS loads the mod without its mods.txt being edited.
+    /// </summary>
+    private static void ImportUe4ssMod(string source, string staging, string name)
+    {
+        var raw = Path.Combine(staging, ".raw");
+        Directory.CreateDirectory(raw);
+        if (Directory.Exists(source))
+        {
+            CopyFromFolder(source, raw, Ue4ssTarget);
+        }
+        else
+        {
+            ExtractArchive(source, raw, Ue4ssTarget);
+        }
+
+        var mains = Directory.GetFiles(raw, "main.lua", SearchOption.AllDirectories)
+            .Where(f => string.Equals(Path.GetFileName(Path.GetDirectoryName(f)), "Scripts", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (mains.Count != 1)
+        {
+            throw new ImportRejectedException(mains.Count == 0
+                ? "it contains no .pak file and no UE4SS mod (Scripts/main.lua)"
+                : "it holds more than one UE4SS mod");
+        }
+
+        var root = Path.GetDirectoryName(Path.GetDirectoryName(mains[0]))!;
+        var folderName = string.Equals(root, raw, StringComparison.OrdinalIgnoreCase) ? name : Path.GetFileName(root);
+        try
+        {
+            ArchivePathValidator.GetSafeSegments(folderName);
+        }
+        catch (UnsafePathException e)
+        {
+            throw new ImportRejectedException($"the mod name cannot be used as a folder name ({e.Message})", e);
+        }
+
+        var target = Path.Combine(staging, folderName);
+        Directory.Move(root, target);
+        var enabled = Path.Combine(target, "enabled.txt");
+        if (!File.Exists(enabled))
+        {
+            File.WriteAllText(enabled, "");
+        }
+
+        if (Directory.Exists(raw))
+        {
+            Directory.Delete(raw, recursive: true);
+        }
+    }
 
     private static bool NameEquals(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
 
@@ -183,7 +302,7 @@ public sealed class ModLibrary
         }
     }
 
-    private static void CopyFromFolder(string folder, string staging)
+    private static void CopyFromFolder(string folder, string staging, Func<string, string?> targetFor)
     {
         if (new DirectoryInfo(folder).Attributes.HasFlag(FileAttributes.ReparsePoint))
         {
@@ -193,24 +312,40 @@ public sealed class ModLibrary
         // Links inside the folder are never followed.
         var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint, MaxRecursionDepth = 32 };
         var count = 0;
-        foreach (var file in Directory.EnumerateFiles(folder, "*", options).Where(f => PakExtensions.Contains(Path.GetExtension(f))))
+        foreach (var file in Directory.EnumerateFiles(folder, "*", options))
         {
+            string? relative;
+            try
+            {
+                relative = targetFor(Path.GetRelativePath(folder, file));
+            }
+            catch (UnsafePathException e)
+            {
+                throw new ImportRejectedException($"a file name cannot be used ({e.Message})", e);
+            }
+
+            if (relative is null)
+            {
+                continue;
+            }
+
             if (++count > MaxFiles)
             {
                 throw new ImportRejectedException("it holds too many files");
             }
 
-            var target = Path.Combine(staging, Path.GetFileName(file));
+            var target = Path.Combine(staging, relative);
             if (File.Exists(target))
             {
-                throw new ImportRejectedException($"two files are named '{Path.GetFileName(file)}'");
+                throw new ImportRejectedException($"two files are named '{relative}'");
             }
 
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
             File.Copy(file, target);
         }
     }
 
-    private static void ExtractArchive(string archivePath, string staging)
+    private static void ExtractArchive(string archivePath, string staging, Func<string, string?> targetFor)
     {
         var archiveLength = new FileInfo(archivePath).Length;
         long written = 0;
@@ -230,18 +365,17 @@ public sealed class ModLibrary
                     continue;
                 }
 
-                var fileName = entry.Key.Split('/', '\\')[^1];
-                if (!PakExtensions.Contains(Path.GetExtension(fileName)))
-                {
-                    continue;
-                }
-
                 if (entry.LinkTarget is not null)
                 {
                     continue; // links are never extracted
                 }
 
-                ArchivePathValidator.GetSafeSegments(fileName);
+                var fileName = targetFor(entry.Key);
+                if (fileName is null)
+                {
+                    continue;
+                }
+
                 if (++count > MaxFiles)
                 {
                     throw new ImportRejectedException("it holds too many files");
@@ -253,6 +387,7 @@ public sealed class ModLibrary
                     throw new ImportRejectedException($"two files are named '{fileName}'");
                 }
 
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
                 using var input = open();
                 using var output = new FileStream(target, FileMode.CreateNew, FileAccess.Write);
                 var buffer = new byte[81920];
