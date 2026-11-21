@@ -14,6 +14,9 @@ public sealed class ModEntry
 
     public bool Enabled { get; set; }
 
+    /// <summary>A UE4SS Lua mod: its files go into the game's UE4SS mods folder instead of ~mods.</summary>
+    public bool Ue4ss { get; init; }
+
     public required List<ModFile> Files { get; init; }
 
     public long TotalSize => Files.Sum(f => f.Size);

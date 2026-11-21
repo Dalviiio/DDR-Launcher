@@ -271,6 +271,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var modsFolder = _game.ModsFolder;
+        var ue4ssFolder = _game.Ue4ssModsFolder;
         IReadOnlyList<string> kept = [];
         var failed = false;
         await RunBusy(async () =>
@@ -279,11 +280,11 @@ public sealed class MainViewModel : ObservableObject
             {
                 if (enabled)
                 {
-                    await Task.Run(() => _library.Enable(item.Model, modsFolder));
+                    await Task.Run(() => _library.Enable(item.Model, modsFolder, ue4ssFolder));
                 }
                 else
                 {
-                    kept = await Task.Run(() => _library.Disable(item.Model, modsFolder));
+                    kept = await Task.Run(() => _library.Disable(item.Model, modsFolder, ue4ssFolder));
                 }
             }
             catch (Exception e) when (e is InvalidOperationException or IOException or UnauthorizedAccessException)
@@ -310,11 +311,12 @@ public sealed class MainViewModel : ObservableObject
         IReadOnlyList<string> kept = [];
         var removed = false;
         var modsFolder = _game?.ModsFolder;
+        var ue4ssFolder = _game?.Ue4ssModsFolder;
         await RunBusy(async () =>
         {
             try
             {
-                kept = await Task.Run(() => _library.Remove(item.Model, modsFolder));
+                kept = await Task.Run(() => _library.Remove(item.Model, modsFolder, ue4ssFolder));
                 removed = true;
             }
             catch (Exception e) when (e is InvalidOperationException or IOException or UnauthorizedAccessException)

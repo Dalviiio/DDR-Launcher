@@ -146,6 +146,85 @@ public sealed class ModLibraryTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(Library, mod.Id)));
     }
 
+    private string Ue4ssMods => Path.Combine(_dir, "game", "ue4ss", "Mods");
+
+    private string WriteUe4ssMod(string folder)
+    {
+        WriteFile(folder + "/Scripts/main.lua", "print('hi')");
+        WriteFile(folder + "/Scripts/menu.lua", "return {}");
+        WriteFile(folder + "/native.dll", "MZ");
+        return Path.Combine(_dir, "src", folder);
+    }
+
+    [Fact]
+    public void A_ue4ss_mod_folder_is_imported_with_its_paths_and_without_native_code()
+    {
+        var mod = NewLibrary().Import(WriteUe4ssMod("Trainer"));
+
+        Assert.True(mod.Ue4ss);
+        Assert.Equal(["Trainer/enabled.txt", "Trainer/Scripts/main.lua", "Trainer/Scripts/menu.lua"], mod.Files.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void A_zipped_ue4ss_mod_keeps_its_folder_name()
+    {
+        var zip = Path.Combine(_dir, "download.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            using (var writer = new StreamWriter(archive.CreateEntry("Release/Trainer/Scripts/main.lua").Open()))
+            {
+                writer.Write("print('hi')");
+            }
+
+            archive.CreateEntry("Release/Trainer/enabled.txt");
+        }
+
+        var mod = NewLibrary().Import(zip);
+
+        Assert.Equal(["Trainer/enabled.txt", "Trainer/Scripts/main.lua"], mod.Files.Select(f => f.Name));
+    }
+
+    [Fact]
+    public void A_ue4ss_mod_with_a_traversal_path_is_rejected()
+    {
+        var zip = Path.Combine(_dir, "mod.zip");
+        using (var archive = ZipFile.Open(zip, ZipArchiveMode.Create))
+        {
+            archive.CreateEntry("Trainer/Scripts/main.lua");
+            archive.CreateEntry("../../evil.lua");
+        }
+
+        Assert.Throws<ImportRejectedException>(() => NewLibrary().Import(zip));
+        Assert.False(File.Exists(Path.Combine(_dir, "evil.lua")));
+        Assert.Empty(Directory.GetDirectories(Library));
+    }
+
+    [Fact]
+    public void A_ue4ss_mod_goes_into_the_ue4ss_mods_folder_and_leaves_no_trace_when_disabled()
+    {
+        Directory.CreateDirectory(Ue4ssMods);
+        var library = NewLibrary();
+        var mod = library.Import(WriteUe4ssMod("Trainer"));
+
+        library.Enable(mod, ModsFolder, Ue4ssMods);
+        Assert.Equal("print('hi')", File.ReadAllText(Path.Combine(Ue4ssMods, "Trainer", "Scripts", "main.lua")));
+        Assert.True(File.Exists(Path.Combine(Ue4ssMods, "Trainer", "enabled.txt")));
+        Assert.False(Directory.Exists(ModsFolder));
+
+        Assert.Empty(library.Disable(mod, ModsFolder, Ue4ssMods));
+        Assert.Empty(Directory.GetFileSystemEntries(Ue4ssMods));
+    }
+
+    [Fact]
+    public void A_ue4ss_mod_cannot_be_enabled_without_ue4ss()
+    {
+        var library = NewLibrary();
+        var mod = library.Import(WriteUe4ssMod("Trainer"));
+
+        Assert.Throws<InvalidOperationException>(() => library.Enable(mod, ModsFolder, Ue4ssMods));
+        Assert.False(Directory.Exists(Path.Combine(_dir, "game", "ue4ss")));
+    }
+
     [Fact]
     public void Steam_library_paths_are_read_from_libraryfolders_vdf()
     {

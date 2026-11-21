@@ -93,7 +93,7 @@ public partial class App : Application
             var library = new ModLibrary(Path.Combine(Settings.DataFolder, "Library"), GameInstall.IsGameRunning);
             foreach (var mod in library.Mods.Where(m => m.Enabled).ToList())
             {
-                library.Disable(mod, game.ModsFolder);
+                library.Disable(mod, game.ModsFolder, game.Ue4ssModsFolder);
             }
 
             var store = LineupStore.Load();
