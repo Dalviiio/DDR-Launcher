@@ -73,8 +73,8 @@ public sealed class Translator : INotifyPropertyChanged
     /// <summary>The translations of a language, as built into the exe; empty for English.</summary>
     internal static Dictionary<string, string> Load(string code)
     {
-        var resource = Application.GetResourceStream(new Uri($"pack://application:,,,/Localization/{code}.json"));
-        if (code == "en" || resource is null)
+        // English is the text itself: there is no en.json, and asking WPF for a missing resource throws.
+        if (code == "en" || Application.GetResourceStream(new Uri($"pack://application:,,,/Localization/{code}.json")) is not { } resource)
         {
             return [];
         }
